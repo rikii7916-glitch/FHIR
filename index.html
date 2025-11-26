@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metabolic Guardian AI - 代謝慢病智揮系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-size: 18px;
+            background-color: #f0f2f5;
+            color: #212529;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            max-width: 900px;
+        }
+        .header-title {
+            color: #0d6efd;
+            font-weight: 800;
+        }
+        .nav-link {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #495057;
+        }
+        .nav-link.active {
+            color: #0d6efd !important;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .card-header {
+            font-weight: bold;
+            padding: 15px 20px;
+        }
+        .btn-lg-custom {
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+        }
+        .status-indicator {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .normal { color: #198754; }
+        .warning { color: #fd7e14; }
+        .danger { color: #dc3545; }
+        .form-label {
+            font-weight: bold;
+        }
+        .record-table th, .record-table td {
+            font-size: 18px;
+            vertical-align: middle;
+        }
+        textarea {
+            font-size: 16px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .action-buttons .btn {
+            flex: 1;
+        }
+        .fhir-report {
+            background-color: #f8f9fa;
+            border-left: 5px solid #0d6efd;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .text-report {
+            background-color: #f8f9fa;
+            border-left: 5px solid #28a745;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: left;
+            font-size: 1rem;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .email-tips {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 16px;
+        }
+        /* 針對 QR Code 的樣式 */
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin: 20px auto;
+            padding: 15px;
+            background: white;
+            border: 1px dashed #ccc;
+            width: fit-content;
+        }
+        .medication-checkbox {
+            transform: scale(1.0);
+            margin-right: 10px;
+        }
+        .format-toggle {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        .format-toggle .btn {
+            margin: 0 5px;
+        }
+        /* 藥物勾選區域樣式 */
+        .medication-section {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        /* 歷史記錄表格調整 */
+        .record-table th:nth-child(1),
+        .record-table td:nth-child(1) {
+            width: 40px;
+        }
+        .record-table th:nth-child(2),
+        .record-table td:nth-child(2) {
+            width: 160px;
+        }
+        .record-table th:nth-child(3),
+        .record-table td:nth-child(3) {
+            width: 120px;
+        }
+        .record-table th:nth-child(4),
+        .record-table td:nth-child(4) {
+            width: 100px;
+        }
+        .record-table th:nth-child(5),
+        .record-table td:nth-child(5) {
+            width: 120px;
+        }
+        .record-table th:nth-child(6),
+        .record-table td:nth-child(6) {
+            width: 120px;
+        }
+        .history-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        .history-actions .btn {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <div class="text-center mb-4">
+            <h1 class="header-title"><i class="fas fa-heartbeat me-2"></i>Metabolic Guardian AI</h1>
+            <p class="text-muted">基於 FHIR 與 AI 的代謝慢病「智揮」系統</p>
+        </div>
+        
+        <ul class="nav nav-tabs nav-fill mb-4" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="bp-tab" data-bs-toggle="tab" data-bs-target="#bp-tab-pane" type="button"><i class="fas fa-heart me-2"></i>血壓監測</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="bs-tab" data-bs-toggle="tab" data-bs-target="#bs-tab-pane" type="button"><i class="fas fa-tint me-2"></i>血糖監測</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="myTabContent">
+            <div class="tab-pane fade show active" id="bp-tab-pane">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-plus-circle me-2"></i>新增血壓記錄
+                    </div>
+                    <div class="card-body">
+                        <form id="bp-form">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">收縮壓 (mmHg)</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control form-control-lg" id="bp-systolic" placeholder="例如: 120" required>
+                                        <button type="button" class="btn btn-outline-primary" onclick="simulateOCR('bp')">
+                                            <i class="fas fa-camera me-1"></i> 拍照識別
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">舒張壓 (mmHg)</label>
+                                    <input type="number" class="form-control form-control-lg" id="bp-diastolic" placeholder="80" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">脈搏 (bpm)</label>
+                                    <input type="number" class="form-control form-control-lg" id="bp-pulse" placeholder="72" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">測量時間</label>
+                                    <input type="datetime-local" class="form-control" id="bp-date" required>
+                                </div>
+                                <div class="col-12">
+                                    <div class="medication-section">
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input medication-checkbox" id="bp-medication">
+                                            <label class="form-check-label fw-bold" for="bp-medication">💊我今天已按時服用血壓藥</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 mt-4">
+                                    <button type="submit" class="btn btn-primary w-100 btn-lg-custom">保存記錄</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                         <div class="card record-card" id="latest-bp-card" style="display: none;">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>最新血壓記錄</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h2 class="display-4 fw-bold" id="latest-bp-value">135/85 mmHg</h2>
+                                <div id="bp-status-badge" class="mb-3"></div>
+                                <p class="text-muted">脈搏: <span id="latest-bp-pulse" class="fw-bold">75</span> 次/分鐘</p>
+                                <p class="text-muted">時間: <span id="latest-bp-time">2023-06-15 08:30</span></p>
+                                <div class="action-buttons">
+                                    <button class="btn btn-outline-danger" onclick="generateFHIR('bp')">
+                                        <i class="fas fa-qrcode me-1"></i>生成急救護照 (FHIR)
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="sendReport('bp')">
+                                        <i class="fas fa-envelope me-1"></i>回傳Gmail
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card record-card">
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-history me-2"></i>血壓歷史記錄</h5>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="select-all-bp">
+                                    <label class="form-check-label text-white" for="select-all-bp">全選</label>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table record-table mb-0">
+                                        <thead>
+                                            <tr class="text-center">
+                                                <th></th>
+                                                <th>時間</th>
+                                                <th>血壓</th>
+                                                <th>脈搏</th>
+                                                <th>狀態</th>
+                                                <th>服藥</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bp-history" class="text-center">
+                                            <!-- 血壓記錄將在這里動態添加 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="history-actions p-3">
+                                    <button class="btn btn-outline-danger" onclick="generateFHIRFromHistory('bp')">
+                                        <i class="fas fa-qrcode me-1"></i>生成FHIR
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="sendReportFromHistory('bp')">
+                                        <i class="fas fa-envelope me-1"></i>回傳Gmail
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="bs-tab-pane">
+                 <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-tint me-2"></i>新增血糖記錄
+                    </div>
+                    <div class="card-body">
+                        <form id="bs-form">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label">血糖值 (mg/dL)</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control form-control-lg" id="bs-value" required>
+                                        <button type="button" class="btn btn-outline-primary" onclick="simulateOCR('bs')">
+                                            <i class="fas fa-camera me-1"></i> 拍照識別
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">測量時機</label>
+                                    <select class="form-select form-select-lg" id="bs-measurement-time" required>
+                                        <option value="fasting">空腹 (Fasting)</option>
+                                        <option value="post-prandial">飯後 (Post-prandial)</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">測量時間</label>
+                                    <input type="datetime-local" class="form-control" id="bs-date" required>
+                                </div>
+                                <div class="col-12">
+                                    <div class="medication-section">
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input medication-checkbox" id="bs-medication">
+                                            <label class="form-check-label fw-bold" for="bs-medication">💊我已施打胰島素/服藥</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 mt-4">
+                                    <button type="submit" class="btn btn-primary w-100 btn-lg-custom">保存記錄</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card record-card" id="latest-bs-card" style="display: none;">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>最新血糖記錄</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <h2 class="display-4 fw-bold" id="latest-bs-value">--</h2>
+                                <div id="bs-status-badge" class="mb-3"></div>
+                                <p class="text-muted">測量時機: <span id="latest-bs-time-type" class="fw-bold">--</span></p>
+                                <p class="text-muted">時間: <span id="latest-bs-time">--</span></p>
+                                <div class="action-buttons">
+                                    <button class="btn btn-outline-danger" onclick="generateFHIR('bs')">
+                                        <i class="fas fa-qrcode me-1"></i>生成急救護照 (FHIR)
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="sendReport('bs')">
+                                        <i class="fas fa-envelope me-1"></i>回傳Gmail
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card record-card">
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-history me-2"></i>血糖歷史記錄</h5>
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="select-all-bs">
+                                    <label class="form-check-label text-white" for="select-all-bs">全選</label>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table record-table mb-0">
+                                        <thead>
+                                            <tr class="text-center">
+                                                <th></th>
+                                                <th>時間</th>
+                                                <th>血糖值</th>
+                                                <th>時機</th>
+                                                <th>狀態</th>
+                                                <th>服藥</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bs-history" class="text-center">
+                                            <!-- 血糖記錄將在這里動態添加 -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="history-actions p-3">
+                                    <button class="btn btn-outline-danger" onclick="generateFHIRFromHistory('bs')">
+                                        <i class="fas fa-qrcode me-1"></i>生成FHIR
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="sendReportFromHistory('bs')">
+                                        <i class="fas fa-envelope me-1"></i>回傳Gmail
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 初始化血壓和血糖記錄數組
+        let bpRecords = [];
+        let bsRecords = [];
+        
+        // 頁面加載時從localStorage讀取數據
+        document.addEventListener('DOMContentLoaded', function() {
+            loadRecords();
+            updateHistoryTables();
+            updateLatestRecords();
+            
+            // 設置表單提交事件
+            document.getElementById('bp-form').addEventListener('submit', saveBpRecord);
+            document.getElementById('bs-form').addEventListener('submit', saveBsRecord);
+            
+            // 設置當前日期時間為默認值
+            const now = new Date();
+            const formattedDateTime = now.toISOString().slice(0, 16);
+            document.getElementById('bp-date').value = formattedDateTime;
+            document.getElementById('bs-date').value = formattedDateTime;
+            
+            // 設置全選功能
+            document.getElementById('select-all-bp').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('#bp-history input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+            
+            document.getElementById('select-all-bs').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('#bs-history input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+        });
+        
+        // 從localStorage加載記錄
+        function loadRecords() {
+            const savedBpRecords = localStorage.getItem('bpRecords');
+            const savedBsRecords = localStorage.getItem('bsRecords');
+            
+            if (savedBpRecords) {
+                bpRecords = JSON.parse(savedBpRecords);
+            }
+            
+            if (savedBsRecords) {
+                bsRecords = JSON.parse(savedBsRecords);
+            }
+        }
+        
+        // 保存血壓記錄
+        function saveBpRecord(e) {
+            e.preventDefault();
+            
+            const systolic = parseInt(document.getElementById('bp-systolic').value);
+            const diastolic = parseInt(document.getElementById('bp-diastolic').value);
+            const pulse = parseInt(document.getElementById('bp-pulse').value);
+            const dateTime = document.getElementById('bp-date').value;
+            const medicationTaken = document.getElementById('bp-medication').checked;
+            
+            // 檢查數值是否合理
+            if (systolic < 70 || systolic > 250 || diastolic < 40 || diastolic > 150) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '數值異常',
+                    text: '請輸入合理的血壓數值',
+                    confirmButtonText: '確定'
+                });
+                return;
+            }
+            
+            // 檢查藥物關聯
+            if ((systolic > 140 || diastolic > 90) && !medicationTaken) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '⚠️ 代謝數值警示！',
+                    html: '系統偵測到您的血壓數值偏高，並且您尚未勾選服藥。請先確認用藥狀況，並休息10分鐘後再次測量。<br><strong>[數據未儲存]</strong>',
+                    confirmButtonText: '確定'
+                });
+                return;
+            }
+            
+            // 創建新記錄
+            const newRecord = {
+                systolic: systolic,
+                diastolic: diastolic,
+                pulse: pulse,
+                dateTime: dateTime,
+                medicationTaken: medicationTaken,
+                timestamp: new Date().getTime()
+            };
+            
+            // 添加到數組並保存
+            bpRecords.unshift(newRecord);
+            saveRecords();
+            
+            // 更新UI
+            updateHistoryTables();
+            updateLatestRecords();
+            
+            // 重置表單
+            document.getElementById('bp-form').reset();
+            document.getElementById('bp-date').value = new Date().toISOString().slice(0, 16);
+            
+            // 顯示成功消息
+            Swal.fire({
+                icon: 'success',
+                title: '記錄已保存',
+                text: '您的血壓記錄已成功保存',
+                confirmButtonText: '確定'
+            });
+        }
+        
+        // 保存血糖記錄
+        function saveBsRecord(e) {
+            e.preventDefault();
+            
+            const value = parseInt(document.getElementById('bs-value').value);
+            const measurementTime = document.getElementById('bs-measurement-time').value;
+            const dateTime = document.getElementById('bs-date').value;
+            const medicationTaken = document.getElementById('bs-medication').checked;
+            
+            // 檢查數值是否合理
+            if (value < 50 || value > 500) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '數值異常',
+                    text: '請輸入合理的血糖數值',
+                    confirmButtonText: '確定'
+                });
+                return;
+            }
+            
+            // 檢查藥物關聯
+            if (value > 140 && !medicationTaken) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '⚠️ 代謝數值警示！',
+                    html: '系統偵測到您的血糖數值偏高，並且您尚未勾選服藥。請先確認用藥狀況，並休息10分鐘後再次測量。<br><strong>[數據未儲存]</strong>',
+                    confirmButtonText: '確定'
+                });
+                return;
+            }
+            
+            // 創建新記錄
+            const newRecord = {
+                value: value,
+                measurementTime: measurementTime,
+                dateTime: dateTime,
+                medicationTaken: medicationTaken,
+                timestamp: new Date().getTime()
+            };
+            
+            // 添加到數組並保存
+            bsRecords.unshift(newRecord);
+            saveRecords();
+            
+            // 更新UI
+            updateHistoryTables();
+            updateLatestRecords();
+            
+            // 重置表單
+            document.getElementById('bs-form').reset();
+            document.getElementById('bs-date').value = new Date().toISOString().slice(0, 16);
+            
+            // 顯示成功消息
+            Swal.fire({
+                icon: 'success',
+                title: '記錄已保存',
+                text: '您的血糖記錄已成功保存',
+                confirmButtonText: '確定'
+            });
+        }
+        
+        // 保存記錄到localStorage
+        function saveRecords() {
+            localStorage.setItem('bpRecords', JSON.stringify(bpRecords));
+            localStorage.setItem('bsRecords', JSON.stringify(bsRecords));
+        }
+        
+        // 更新歷史記錄表格
+        function updateHistoryTables() {
+            // 血壓歷史記錄
+            const bpHistoryTable = document.getElementById('bp-history');
+            bpHistoryTable.innerHTML = '';
+            
+            bpRecords.forEach((record, index) => {
+                const row = document.createElement('tr');
+                
+                // 格式化日期時間
+                const formattedDateTime = formatDateTime(record.dateTime);
+                
+                // 確定狀態
+                const status = getBpStatus(record.systolic, record.diastolic);
+                
+                row.innerHTML = `
+                    <td><input type="checkbox" class="form-check-input" data-index="${index}"></td>
+                    <td>${formattedDateTime}</td>
+                    <td>${record.systolic}/${record.diastolic} mmHg</td>
+                    <td>${record.pulse}</td>
+                    <td><span class="status-indicator ${status.class}"><i class="${status.icon}"></i> ${status.text}</span></td>
+                    <td>${record.medicationTaken ? '是' : '否'}</td>
+                `;
+                
+                bpHistoryTable.appendChild(row);
+            });
+            
+            // 血糖歷史記錄
+            const bsHistoryTable = document.getElementById('bs-history');
+            bsHistoryTable.innerHTML = '';
+            
+            bsRecords.forEach((record, index) => {
+                const row = document.createElement('tr');
+                
+                // 格式化日期時間
+                const formattedDateTime = formatDateTime(record.dateTime);
+                
+                // 確定狀態
+                const status = getBsStatus(record.value, record.measurementTime);
+                
+                row.innerHTML = `
+                    <td><input type="checkbox" class="form-check-input" data-index="${index}"></td>
+                    <td>${formattedDateTime}</td>
+                    <td>${record.value} mg/dL</td>
+                    <td>${getMeasurementTimeText(record.measurementTime)}</td>
+                    <td><span class="status-indicator ${status.class}"><i class="${status.icon}"></i> ${status.text}</span></td>
+                    <td>${record.medicationTaken ? '是' : '否'}</td>
+                `;
+                
+                bsHistoryTable.appendChild(row);
+            });
+        }
+        
+        // 更新最新記錄卡片
+        function updateLatestRecords() {
+            // 血壓最新記錄
+            if (bpRecords.length > 0) {
+                const latestBp = bpRecords[0];
+                const bpStatus = getBpStatus(latestBp.systolic, latestBp.diastolic);
+                
+                document.getElementById('latest-bp-value').textContent = `${latestBp.systolic}/${latestBp.diastolic} mmHg`;
+                document.getElementById('latest-bp-pulse').textContent = latestBp.pulse;
+                document.getElementById('latest-bp-time').textContent = formatDateTime(latestBp.dateTime);
+                
+                const statusElement = document.getElementById('bp-status-badge');
+                statusElement.innerHTML = bpStatus.class === 'danger' 
+                    ? '<span class="badge bg-danger">偏高 - 注意</span>' 
+                    : bpStatus.class === 'warning'
+                    ? '<span class="badge bg-warning text-dark">需注意</span>'
+                    : '<span class="badge bg-success">數值正常</span>';
+                
+                document.getElementById('latest-bp-card').style.display = 'block';
+            } else {
+                document.getElementById('latest-bp-card').style.display = 'none';
+            }
+            
+            // 血糖最新記錄
+            if (bsRecords.length > 0) {
+                const latestBs = bsRecords[0];
+                const bsStatus = getBsStatus(latestBs.value, latestBs.measurementTime);
+                
+                document.getElementById('latest-bs-value').textContent = `${latestBs.value} mg/dL`;
+                document.getElementById('latest-bs-time-type').textContent = getMeasurementTimeText(latestBs.measurementTime);
+                document.getElementById('latest-bs-time').textContent = formatDateTime(latestBs.dateTime);
+                
+                const statusElement = document.getElementById('bs-status-badge');
+                statusElement.innerHTML = bsStatus.class === 'danger' 
+                    ? '<span class="badge bg-danger">偏高 - 注意</span>' 
+                    : bsStatus.class === 'warning'
+                    ? '<span class="badge bg-warning text-dark">需注意</span>'
+                    : '<span class="badge bg-success">數值正常</span>';
+                
+                document.getElementById('latest-bs-card').style.display = 'block';
+            } else {
+                document.getElementById('latest-bs-card').style.display = 'none';
+            }
+        }
+        
+        // 格式化日期時間
+        function formatDateTime(dateTimeString) {
+            const date = new Date(dateTimeString);
+            return date.toLocaleString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).replace(/\//g, '-');
+        }
+        
+        // 獲取血壓狀態
+        function getBpStatus(systolic, diastolic) {
+            if (systolic >= 140 || diastolic >= 90) {
+                return { class: 'danger',  text: '偏高' };
+            } else if (systolic <= 90 || diastolic <= 60) {
+                return { class: 'warning',  text: '偏低' };
+            } else {
+                return { class: 'normal',  text: '正常' };
+            }
+        }
+        
+        // 獲取血糖狀態
+        function getBsStatus(value, measurementTime) {
+            let upperLimit = 140; // 默認上限
+            
+            // 根據測量時機調整上限
+            if (measurementTime === 'post-prandial') {
+                upperLimit = 180;
+            }
+            
+            if (value < 70) {
+                return { class: 'warning',  text: '偏低' };
+            } else if (value > upperLimit) {
+                return { class: 'danger',text: '偏高' };
+            } else {
+                return { class: 'normal', text: '正常' };
+            }
+        }
+        
+        // 獲取測量時機文本
+        function getMeasurementTimeText(measurementTime) {
+            switch (measurementTime) {
+                case 'fasting': return '空腹';
+                case 'post-prandial': return '飯後';
+                default: return measurementTime;
+            }
+        }
+        
+        // 模擬OCR拍照識別
+        function simulateOCR(type) {
+            Swal.fire({
+                title: 'AI拍照識別中...',
+                html: '正在分析您的測量儀器照片',
+                timer: 1500,
+                timerProgressBar: true,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            }).then(() => {
+                // 生成隨機但合理的數值
+                if (type === 'bp') {
+                    const systolic = Math.floor(Math.random() * 41) + 120; // 120-160
+                    const diastolic = Math.floor(Math.random() * 26) + 70; // 70-95
+                    const pulse = Math.floor(Math.random() * 31) + 60; // 60-90
+                    
+                    document.getElementById('bp-systolic').value = systolic;
+                    document.getElementById('bp-diastolic').value = diastolic;
+                    document.getElementById('bp-pulse').value = pulse;
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: '識別成功',
+                        html: `已識別血壓值: <strong>${systolic}/${diastolic} mmHg</strong><br>脈搏: <strong>${pulse} 次/分鐘</strong>`,
+                        confirmButtonText: '確定'
+                    });
+                } else if (type === 'bs') {
+                    const value = Math.floor(Math.random() * 111) + 90; // 90-200
+                    const measurementTimes = ['fasting', 'post-prandial'];
+                    const measurementTime = measurementTimes[Math.floor(Math.random() * measurementTimes.length)];
+                    
+                    document.getElementById('bs-value').value = value;
+                    document.getElementById('bs-measurement-time').value = measurementTime;
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: '識別成功',
+                        html: `已識別血糖值: <strong>${value} mg/dL</strong><br>測量時機: <strong>${getMeasurementTimeText(measurementTime)}</strong>`,
+                        confirmButtonText: '確定'
+                    });
+                }
+            });
+        }
+        
+        // 模擬 FHIR 伺服器上傳
+        function uploadFHIR(resource) {
+            return new Promise(resolve => {
+                setTimeout(() => resolve(true), 1000); // 模擬 1秒延遲
+            });
+        }
+        
+        // 將FHIR資源轉換為文字格式
+        function fhirToText(resource, type) {
+            let text = '';
+            
+            if (type === 'bp') {
+                const latestBp = bpRecords[0];
+                const bpStatus = getBpStatus(latestBp.systolic, latestBp.diastolic);
+                
+                text = `急診救命護照 (血壓) <br>
+
+資源類型: Observation<br>
+狀態: 最終結果<br>
+LOINC代碼: 85354-9 (血壓面板)<br>
+患者: 示例患者<br>
+測量時間: ${formatDateTime(latestBp.dateTime)}<br>
+測量結果<br>
+收縮壓: ${latestBp.systolic} mmHg (LOINC: 8480-6)<br>
+舒張壓: ${latestBp.diastolic} mmHg (LOINC: 8462-4)<br>
+脈搏: ${latestBp.pulse} 次/分鐘 (LOINC: 8867-4)<br>
+狀態: ${bpStatus.text}<br>
+服藥情況: ${latestBp.medicationTaken ? '已按時服藥' : '未按時服藥'}`;
+            } else if (type === 'bs') {
+                const latestBs = bsRecords[0];
+                const bsStatus = getBsStatus(latestBs.value, latestBs.measurementTime);
+                
+                text = `急診救命護照 (血糖)<br>
+
+資源類型: Observation<br>
+狀態: 最終結果<br>
+LOINC代碼: 41653-7 (毛細血管血糖)<br>
+患者: 示例患者<br>
+測量時間: ${formatDateTime(latestBs.dateTime)}<br>
+測量時機: ${getMeasurementTimeText(latestBs.measurementTime)}<br>
+血糖值: ${latestBs.value} mg/dL<br>
+狀態: ${bsStatus.text}<br>
+服藥情況: ${latestBs.medicationTaken ? '已按時服藥' : '未按時服藥'}<br>`;
+            }
+            
+            return text;
+        }
+        
+        // 生成FHIR報告
+        async function generateFHIR(type) {
+            if (type === 'bp' && bpRecords.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '無記錄',
+                    text: '沒有可用的血壓記錄',
+                    confirmButtonText: '確定'
+                });
+                return;
+            }
+            
+            if (type === 'bs' && bsRecords.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '無記錄',
+                    text: '沒有可用的血糖記錄',
+                    confirmButtonText: '確定'
+                });
+                return;
+            }
+            
+            let resource, title, desc;
+            
+            // 顯示上傳中
+            Swal.fire({
+                title: '正在同步至 FHIR Server',
+                html: '正在加密並上傳數據...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            if (type === 'bp') {
+                const latestBp = bpRecords[0];
+                const bpStatus = getBpStatus(latestBp.systolic, latestBp.diastolic);
+                
+                resource = {
+                    resourceType: "Observation",
+                    id: "blood-pressure-" + latestBp.timestamp,
+                    status: "final",
+                    code: {
+                        coding: [{
+                            system: "http://loinc.org",
+                            code: "85354-9",
+                            display: "Blood pressure panel"
+                        }],
+                        text: "Blood pressure"
+                    },
+                    subject: {
+                        reference: "Patient/example",
+                        display: "示例患者"
+                    },
+                    effectiveDateTime: latestBp.dateTime,
+                    component: [
+                        {
+                            code: {
+                                coding: [{
+                                    system: "http://loinc.org",
+                                    code: "8480-6",
+                                    display: "Systolic blood pressure"
+                                }],
+                                text: "Systolic blood pressure"
+                            },
+                            valueQuantity: {
+                                value: latestBp.systolic,
+                                unit: "mmHg",
+                                system: "http://unitsofmeasure.org",
+                                code: "mm[Hg]"
+                            }
+                        },
+                        {
+                            code: {
+                                coding: [{
+                                    system: "http://loinc.org",
+                                    code: "8462-4",
+                                    display: "Diastolic blood pressure"
+                                }],
+                                text: "Diastolic blood pressure"
+                            },
+                            valueQuantity: {
+                                value: latestBp.diastolic,
+                                unit: "mmHg",
+                                system: "http://unitsofmeasure.org",
+                                code: "mm[Hg]"
+                            }
+                        },
+                        // 新增：脈搏 (Heart Rate) Component
+                        {
+                            code: {
+                                coding: [{
+                                    system: "http://loinc.org",
+                                    code: "8867-4",
+                                    display: "Heart rate"
+                                }],
+                                text: "Heart rate"
+                            },
+                            valueQuantity: {
+                                value: latestBp.pulse,
+                                unit: "beats/min",
+                                system: "http://unitsofmeasure.org",
+                                code: "/min"
+                            }
+                        }
+                    ]
+                };
+                
+                title = "急診救命護照 (血壓)";
+                desc = "已包含最近一次血壓與脈搏數據";
+            } else if (type === 'bs') {
+                const latestBs = bsRecords[0];
+                const bsStatus = getBsStatus(latestBs.value, latestBs.measurementTime);
+                
+                resource = {
+                    resourceType: "Observation",
+                    id: "blood-glucose-" + latestBs.timestamp,
+                    status: "final",
+                    code: {
+                        coding: [{
+                            system: "http://loinc.org",
+                            code: "41653-7",
+                            display: "Glucose [Mass/volume] in Capillary blood"
+                        }, {
+                            system: "http://example.org/fhir/CodeSystem/measurement-time",
+                            code: latestBs.measurementTime,
+                            display: getMeasurementTimeText(latestBs.measurementTime)
+                        }],
+                        text: "Blood glucose"
+                    },
+                    subject: {
+                        reference: "Patient/example",
+                        display: "示例患者"
+                    },
+                    effectiveDateTime: latestBs.dateTime,
+                    valueQuantity: {
+                        value: latestBs.value,
+                        unit: "mg/dL",
+                        system: "http://unitsofmeasure.org",
+                        code: "mg/dL"
+                    }
+                };
+                
+                title = "急診救命護照 (血糖)";
+                desc = "已包含最近一次血糖監測數據";
+            }
+            
+            // 等待模擬上傳
+            await uploadFHIR(resource);
+
+            // 生成模擬的 FHIR Server URL
+            const fhirUrl = `https://hapi.fhir.org/baseR4/Observation/${resource.id}`;
+            const jsonStr = JSON.stringify(resource, null, 2);
+            const textReport = fhirToText(resource, type);
+
+            // 顯示結果與 QR Code
+            Swal.fire({
+                title: title,
+                html: `
+                    <p class="text-danger fw-bold">${desc}</p>
+                    <div id="qrcode"></div>
+                    <p class="small text-muted">醫護人員請掃描上方 QR Code 讀取 FHIR 數據</p>
+                    <div class="format-toggle">
+                        <button class="btn btn-outline-primary" id="text-format-btn">文字顯示</button>
+                        <button class="btn btn-primary" id="fhir-format-btn">FHIR R4 格式</button>
+                    </div>
+                    <div id="report-content">
+                        <div class="text-report" id="text-report">${textReport}</div>
+                        <div class="fhir-report" id="fhir-report" style="display: none;"><pre>${jsonStr}</pre></div>
+                    </div>
+                `,
+                width: 700,
+                confirmButtonText: '關閉護照',
+                didOpen: () => {
+                    // 使用 QRCode.js 生成二維碼
+                    new QRCode(document.getElementById("qrcode"), {
+                        text: fhirUrl,
+                        width: 150,
+                        height: 150,
+                        colorDark : "#d63384", // 使用醒目的顏色
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+                    
+                    // 添加格式切换事件
+                    document.getElementById('text-format-btn').addEventListener('click', function() {
+                        document.getElementById('text-report').style.display = 'block';
+                        document.getElementById('fhir-report').style.display = 'none';
+                        this.classList.add('btn-primary');
+                        this.classList.remove('btn-outline-primary');
+                        document.getElementById('fhir-format-btn').classList.remove('btn-primary');
+                        document.getElementById('fhir-format-btn').classList.add('btn-outline-primary');
+                    });
+                    
+                    document.getElementById('fhir-format-btn').addEventListener('click', function() {
+                        document.getElementById('text-report').style.display = 'none';
+                        document.getElementById('fhir-report').style.display = 'block';
+                        this.classList.add('btn-primary');
+                        this.classList.remove('btn-outline-primary');
+                        document.getElementById('text-format-btn').classList.remove('btn-primary');
+                        document.getElementById('text-format-btn').classList.add('btn-outline-primary');
+                    });
+                }
+            });
+        }
+        
+        // 從歷史記錄生成FHIR
+        async function generateFHIRFromHistory(type) {
+            const records = type === 'bp' ? bpRecords : bsRecords;
+            const selectedIndices = getSelectedIndices(type);
+            
+            if (selectedIndices.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '未選擇記錄',
+                    text: '請至少選擇一條記錄',
+                    confirmButtonText: '確定'
+                });
+                return;
+            }
+            
+            // 顯示上傳中
+            Swal.fire({
+                title: '正在同步至 FHIR Server',
+                html: '正在加密並上傳數據...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+            
+            // 為每條選中的記錄生成FHIR資源
+            const resources = selectedIndices.map(index => {
+                const record = records[index];
+                
+                if (type === 'bp') {
+                    return {
+                        resourceType: "Observation",
+                        id: "blood-pressure-" + record.timestamp,
+                        status: "final",
+                        code: {
+                            coding: [{
+                                system: "http://loinc.org",
+                                code: "85354-9",
+                                display: "Blood pressure panel"
+                            }],
+                            text: "Blood pressure"
+                        },
+                        subject: {
+                            reference: "Patient/example",
+                            display: "示例患者"
+                        },
+                        effectiveDateTime: record.dateTime,
+                        component: [
+                            {
+                                code: {
+                                    coding: [{
+                                        system: "http://loinc.org",
+                                        code: "8480-6",
+                                        display: "Systolic blood pressure"
+                                    }],
+                                    text: "Systolic blood pressure"
+                                },
+                                valueQuantity: {
+                                    value: record.systolic,
+                                    unit: "mmHg",
+                                    system: "http://unitsofmeasure.org",
+                                    code: "mm[Hg]"
+                                }
+                            },
+                            {
+                                code: {
+                                    coding: [{
+                                        system: "http://loinc.org",
+                                        code: "8462-4",
+                                        display: "Diastolic blood pressure"
+                                    }],
+                                    text: "Diastolic blood pressure"
+                                },
+                                valueQuantity: {
+                                    value: record.diastolic,
+                                    unit: "mmHg",
+                                    system: "http://unitsofmeasure.org",
+                                    code: "mm[Hg]"
+                                }
+                            },
+                            {
+                                code: {
+                                    coding: [{
+                                        system: "http://loinc.org",
+                                        code: "8867-4",
+                                        display: "Heart rate"
+                                    }],
+                                    text: "Heart rate"
+                                },
+                                valueQuantity: {
+                                    value: record.pulse,
+                                    unit: "beats/min",
+                                    system: "http://unitsofmeasure.org",
+                                    code: "/min"
+                                }
+                            }
+                        ]
+                    };
+                } else if (type === 'bs') {
+                    return {
+                        resourceType: "Observation",
+                        id: "blood-glucose-" + record.timestamp,
+                        status: "final",
+                        code: {
+                            coding: [{
+                                system: "http://loinc.org",
+                                code: "41653-7",
+                                display: "Glucose [Mass/volume] in Capillary blood"
+                            }, {
+                                system: "http://example.org/fhir/CodeSystem/measurement-time",
+                                code: record.measurementTime,
+                                display: getMeasurementTimeText(record.measurementTime)
+                            }],
+                            text: "Blood glucose"
+                        },
+                        subject: {
+                            reference: "Patient/example",
+                            display: "示例患者"
+                        },
+                        effectiveDateTime: record.dateTime,
+                        valueQuantity: {
+                            value: record.value,
+                            unit: "mg/dL",
+                            system: "http://unitsofmeasure.org",
+                            code: "mg/dL"
+                        }
+                    };
+                }
+            });
+            
+            // 等待模擬上傳
+            await uploadFHIR(resources);
+            
+            // 生成Bundle資源
+            const bundle = {
+                resourceType: "Bundle",
+                type: "collection",
+                entry: resources.map(resource => ({
+                    resource: resource
+                }))
+            };
+            
+            const jsonStr = JSON.stringify(bundle, null, 2);
+            const textReport = generateHistoryTextReport(selectedIndices, type);
+            
+            // 顯示結果
+            Swal.fire({
+                title: type === 'bp' ? "血壓歷史記錄FHIR報告" : "血糖歷史記錄FHIR報告",
+                html: `
+                    <p class="text-danger fw-bold">已包含${selectedIndices.length}條記錄</p>
+                    <div class="format-toggle">
+                        <button class="btn btn-outline-primary" id="text-format-btn">文字顯示</button>
+                        <button class="btn btn-primary" id="fhir-format-btn">FHIR R4 格式</button>
+                    </div>
+                    <div id="report-content">
+                        <div class="text-report" id="text-report">${textReport}</div>
+                        <div class="fhir-report" id="fhir-report" style="display: none;"><pre>${jsonStr}</pre></div>
+                    </div>
+                `,
+                width: 700,
+                confirmButtonText: '關閉',
+                didOpen: () => {
+                    // 添加格式切换事件
+                    document.getElementById('text-format-btn').addEventListener('click', function() {
+                        document.getElementById('text-report').style.display = 'block';
+                        document.getElementById('fhir-report').style.display = 'none';
+                        this.classList.add('btn-primary');
+                        this.classList.remove('btn-outline-primary');
+                        document.getElementById('fhir-format-btn').classList.remove('btn-primary');
+                        document.getElementById('fhir-format-btn').classList.add('btn-outline-primary');
+                    });
+                    
+                    document.getElementById('fhir-format-btn').addEventListener('click', function() {
+                        document.getElementById('text-report').style.display = 'none';
+                        document.getElementById('fhir-report').style.display = 'block';
+                        this.classList.add('btn-primary');
+                        this.classList.remove('btn-outline-primary');
+                        document.getElementById('text-format-btn').classList.remove('btn-primary');
+                        document.getElementById('text-format-btn').classList.add('btn-outline-primary');
+                    });
+                }
+            });
+        }
+        
+        // 生成歷史記錄的文字報告
+        function generateHistoryTextReport(selectedIndices, type) {
+            const records = type === 'bp' ? bpRecords : bsRecords;
+            let text = type === 'bp' ? "血壓歷史記錄報告\n\n<br>------------------------\n<br>" : "血糖歷史記錄報告\n\n<br>------------------------\n<br>";
+            
+            selectedIndices.forEach(index => {
+                const record = records[index];
+                
+                if (type === 'bp') {
+                    const status = getBpStatus(record.systolic, record.diastolic);
+                    text += `
+
+測量時間: ${formatDateTime(record.dateTime)}<br>
+血壓值: ${record.systolic}/${record.diastolic} mmHg<br>
+脈搏: ${record.pulse} 次/分鐘<br>
+狀態: ${status.text}<br>
+服藥情況: ${record.medicationTaken ? '已按時服藥' : '未按時服藥'}<br>
+------------------------\n<br>`;
+                } else if (type === 'bs') {
+                    const status = getBsStatus(record.value, record.measurementTime);
+                    text += `
+
+測量時間: ${formatDateTime(record.dateTime)}<br>
+血糖值: ${record.value} mg/dL<br>
+測量時機: ${getMeasurementTimeText(record.measurementTime)}<br>
+狀態: ${status.text}<br>
+服藥情況: ${record.medicationTaken ? '已按時服藥' : '未按時服藥'}<br>
+------------------------\n<br>`;
+                }
+            });
+            
+            return text;
+        }
+        
+        // 獲取選中的記錄索引
+        function getSelectedIndices(type) {
+            const checkboxes = document.querySelectorAll(`#${type}-history input[type="checkbox"]:checked`);
+            return Array.from(checkboxes).map(checkbox => parseInt(checkbox.getAttribute('data-index')));
+        }
+        
+        // 發送報告到Gmail（模擬）
+        function sendReport(type) {
+            if (type === 'bp' && bpRecords.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '無記錄',
+                    text: '沒有可用的血壓記錄',
+                    confirmButtonText: '確定'
+                });
+                return;
+            }
+            
+            if (type === 'bs' && bsRecords.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '無記錄',
+                    text: '沒有可用的血糖記錄',
+                    confirmButtonText: '確定'
+                });
+                return;
+            }
+            
+            // 首先詢問用戶輸入Gmail地址
+            Swal.fire({
+                title: '請輸入您的Gmail地址',
+                input: 'email',
+                inputLabel: '我們將把報告發送到此郵箱',
+                inputPlaceholder: 'example@gmail.com',
+                showCancelButton: true,
+                confirmButtonText: '發送',
+                cancelButtonText: '取消',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return '請輸入有效的Gmail地址';
+                    }
+                    if (!value.includes('@gmail.com')) {
+                        return '請輸入有效的Gmail地址';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const email = result.value;
+                    
+                    // 模擬發送過程
+                    Swal.fire({
+                        title: '發送中...',
+                        html: '正在將報告發送到您的Gmail郵箱',
+                        timer: 2000,
+                        timerProgressBar: true,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    }).then(() => {
+                        let reportContent, title;
+                        
+                        if (type === 'bp') {
+                            const latestBp = bpRecords[0];
+                            const bpStatus = getBpStatus(latestBp.systolic, latestBp.diastolic);
+                            
+                            title = "血壓報告";
+                            reportContent = `
+患者姓名: 示例患者
+測量時間: ${formatDateTime(latestBp.dateTime)}
+血壓值: ${latestBp.systolic}/${latestBp.diastolic} mmHg
+脈搏: ${latestBp.pulse} 次/分鐘
+狀態: ${bpStatus.text}
+服藥情況: ${latestBp.medicationTaken ? '已按時服藥' : '未按時服藥'}
+
+=== FHIR R4 摘要 ===
+資源類型: Observation
+LOINC代碼: 85354-9 (Blood pressure panel)
+收縮壓: ${latestBp.systolic} mmHg (LOINC: 8480-6)
+舒張壓: ${latestBp.diastolic} mmHg (LOINC: 8462-4)
+測量時間: ${latestBp.dateTime}
+                            `;
+                        } else if (type === 'bs') {
+                            const latestBs = bsRecords[0];
+                            const bsStatus = getBsStatus(latestBs.value, latestBs.measurementTime);
+                            
+                            title = "血糖報告";
+                            reportContent = `
+患者姓名: 示例患者
+測量時間: ${formatDateTime(latestBs.dateTime)}
+血糖值: ${latestBs.value} mg/dL
+測量時機: ${getMeasurementTimeText(latestBs.measurementTime)}
+狀態: ${bsStatus.text}
+服藥情況: ${latestBs.medicationTaken ? '已按時服藥' : '未按時服藥'}
+
+=== FHIR R4 摘要 ===
+資源類型: Observation
+LOINC代碼: 41653-7 (Glucose [Mass/volume] in Capillary blood)
+測量時機: ${getMeasurementTimeText(latestBs.measurementTime)}
+血糖值: ${latestBs.value} mg/dL
+測量時間: ${latestBs.dateTime}
+                            `;
+                        }
+                        
+                        // 顯示發送成功消息
+                        Swal.fire({
+                            title: '報告已發送',
+                            html: `
+                                <p>已成功將${title}發送至 <strong>${email}</strong></p>
+                                <div class="email-tips">
+                                    <p><strong>郵件查看提示：</strong></p>
+                                    <ul>
+                                        <li>請以「HTML方式」瀏覽郵件，並允許「顯示圖片」，才可正確查看報告內容</li>
+                                        <li>若沒有收到Email，請確認Email位址是否有錯，或是被當廣告信件過濾掉！</li>
+                                    </ul>
+                                </div>
+                                <textarea class="form-control mt-3" rows="10" readonly>${reportContent.trim()}</textarea>
+                            `,
+                            confirmButtonText: '關閉',
+                            width: '700px'
+                        });
+                    });
+                }
+            });
+        }
+        
+        // 從歷史記錄發送報告到Gmail
+        function sendReportFromHistory(type) {
+            const selectedIndices = getSelectedIndices(type);
+            
+            if (selectedIndices.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: '未選擇記錄',
+                    text: '請至少選擇一條記錄',
+                    confirmButtonText: '確定'
+                });
+                return;
+            }
+            
+            // 首先詢問用戶輸入Gmail地址
+            Swal.fire({
+                title: '請輸入您的Gmail地址',
+                input: 'email',
+                inputLabel: '我們將把報告發送到此郵箱',
+                inputPlaceholder: 'example@gmail.com',
+                showCancelButton: true,
+                confirmButtonText: '發送',
+                cancelButtonText: '取消',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return '請輸入有效的Gmail地址';
+                    }
+                    if (!value.includes('@gmail.com')) {
+                        return '請輸入有效的Gmail地址';
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const email = result.value;
+                    
+                    // 模擬發送過程
+                    Swal.fire({
+                        title: '發送中...',
+                        html: '正在將報告發送到您的Gmail郵箱',
+                        timer: 2000,
+                        timerProgressBar: true,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    }).then(() => {
+                        const records = type === 'bp' ? bpRecords : bsRecords;
+                        const title = type === 'bp' ? "血壓歷史記錄報告" : "血糖歷史記錄報告";
+                        const reportContent = generateHistoryTextReport(selectedIndices, type);
+                        
+                        // 顯示發送成功消息
+                        Swal.fire({
+                            title: '報告已發送',
+                            html: `
+                                <p>已成功將${title}發送至 <strong>${email}</strong></p>
+                                <div class="email-tips">
+                                    <p><strong>郵件查看提示：</strong></p>
+                                    <ul>
+                                        <li>請以「HTML方式」瀏覽郵件，並允許「顯示圖片」，才可正確查看報告內容</li>
+                                        <li>若沒有收到Email，請確認Email位址是否有錯，或是被當廣告信件過濾掉！</li>
+                                    </ul>
+                                </div>
+                                <textarea class="form-control mt-3" rows="10" readonly>${reportContent}</textarea>
+                            `,
+                            confirmButtonText: '關閉',
+                            width: '700px'
+                        });
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
