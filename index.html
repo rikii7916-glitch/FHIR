@@ -10,164 +10,173 @@
 	</script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
 	</script>
-	<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
+	</script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+	</script>
 	<style>
-	          body {
-	              font-size: 18px;
-	              background-color: #f0f2f5;
-	              color: #212529;
-	              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-	          }
-	          .container {
-	              max-width: 900px;
-	          }
-	          .header-title {
-	              color: #0d6efd;
-	              font-weight: 800;
-	          }
-	          .nav-link {
-	              font-size: 1.1rem;
-	              font-weight: bold;
-	              color: #495057;
-	          }
-	          .nav-link.active {
-	              color: #0d6efd !important;
-	          }
-	          .card {
-	              border: none;
-	              border-radius: 15px;
-	              box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-	              margin-bottom: 20px;
-	              overflow: hidden;
-	          }
-	          .card-header {
-	              font-weight: bold;
-	              padding: 15px 20px;
-	          }
-	          .btn-lg-custom {
-	              padding: 12px 20px;
-	              font-size: 1.1rem;
-	              border-radius: 10px;
-	          }
-	          .status-indicator {
-	              font-size: 1.2rem;
-	              font-weight: bold;
-	          }
-	          .normal { color: #198754; }
-	          .warning { color: #fd7e14; }
-	          .danger { color: #dc3545; }
-	          .form-label {
-	              font-weight: bold;
-	          }
-	          .record-table th, .record-table td {
-	              font-size: 18px;
-	              vertical-align: middle;
-	          }
-	          textarea {
-	              font-size: 16px;
-	          }
-	          .action-buttons {
-	              display: flex;
-	              gap: 10px;
-	              margin-top: 15px;
-	          }
-	          .action-buttons .btn {
-	              flex: 1;
-	          }
-	          .fhir-report {
-	              background-color: #f8f9fa;
-	              border-left: 5px solid #0d6efd;
-	              padding: 15px;
-	              margin-top: 15px;
-	              text-align: left;
-	              font-family: monospace;
-	              font-size: 0.9rem;
-	              max-height: 300px;
-	              overflow-y: auto;
-	          }
-	          .text-report {
-	              background-color: #f8f9fa;
-	              border-left: 5px solid #28a745;
-	              padding: 15px;
-	              margin-top: 15px;
-	              text-align: left;
-	              font-family: monospace;
-	              font-size: 0.9rem;
-	              max-height: 300px;
-	              overflow-y: auto;
-	          }
-	          .patient-info-header {
-	              background-color: #e9ecef;
-	              padding: 10px 20px;
-	              border-radius: 10px;
-	              padding: 15px;
-	              margin-bottom: 20px;
-	          }
-	          .report-toggle button {
-	              margin: 5px;
-	          }
-	          #qrcode {
-	              padding: 10px;
-	              background-color: white;
-	              display: inline-block;
-	          }
+	                   body {
+	                       font-size: 18px;
+	                       background-color: #f0f2f5;
+	                       color: #212529;
+	                       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	                   }
+	                   .container {
+	                       max-width: 900px;
+	                   }
+	                   .header-title {
+	                       color: #0d6efd;
+	                       font-weight: 800;
+	                   }
+	                   .nav-link {
+	                       font-size: 1.1rem;
+	                       font-weight: bold;
+	                       color: #495057;
+	                   }
+	                   .nav-link.active {
+	                       color: #0d6efd !important;
+	                   }
+	                   .card {
+	                       border: none;
+	                       border-radius: 15px;
+	                       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+	                       margin-bottom: 20px;
+	                       overflow: hidden;
+	                   }
+	                   .card-header {
+	                       font-weight: bold;
+	                       padding: 15px 20px;
+	                   }
+	                   .btn-lg-custom {
+	                       padding: 12px 20px;
+	                       font-size: 1.1rem;
+	                       border-radius: 10px;
+	                   }
+	                   .status-indicator {
+	                       font-size: 1.2rem;
+	                       font-weight: bold;
+	                   }
+	                   .normal { color: #198754; }
+	                   .warning { color: #fd7e14; }
+	                   .danger { color: #dc3545; }
+	                   .form-label {
+	                       font-weight: bold;
+	                   }
+	                   .record-table th, .record-table td {
+	                       font-size: 18px;
+	                       vertical-align: middle;
+	                   }
+	                   textarea {
+	                       font-size: 16px;
+	                   }
+	                   .action-buttons {
+	                       display: flex;
+	                       gap: 10px;
+	                       margin-top: 15px;
+	                   }
+	                   .action-buttons .btn {
+	                       flex: 1;
+	                   }
+	                   .fhir-report {
+	                       background-color: #f8f9fa;
+	                       border-left: 5px solid #0d6efd;
+	                       padding: 15px;
+	                       margin-top: 15px;
+	                       text-align: left;
+	                       font-family: monospace;
+	                       font-size: 0.9rem;
+	                       max-height: 300px;
+	                       overflow-y: auto;
+	                   }
+	                   .text-report {
+	                       background-color: #f8f9fa;
+	                       border-left: 5px solid #28a745;
+	                       padding: 15px;
+	                       margin-top: 15px;
+	                       text-align: left;
+	                       font-family: monospace;
+	                       font-size: 0.9rem;
+	                       max-height: 300px;
+	                       overflow-y: auto;
+	                   }
+	                   .patient-info-header {
+	                       background-color: #e9ecef;
+	                       padding: 10px 20px;
+	                       border-radius: 10px;
+	                       padding: 15px;
+	                       margin-bottom: 20px;
+	                   }
+	                   .report-toggle button {
+	                       margin: 5px;
+	                   }
+	                   #qrcode {
+	                       padding: 10px;
+	                       background-color: white;
+	                       display: inline-block;
+	                   }
 	</style>
 </head>
 <body>
 	<div class="container py-4">
 		<div class="text-center mb-4">
-			<h1 class="header-title"><i class="fas fa-heartbeat me-2"></i>Metabolic Guardian AI</h1>
+			<h1 class="header-title"><i class="fas fa-heartbeat me-2"></i>Chronic Illness Guardian</h1>
 			<p class="text-muted">基於 FHIR 建立的 慢性疾病「智慧」系統</p>
 		</div>
 		<div class="patient-info-header d-flex justify-content-between align-items-center mb-4">
 			<div>
-				<h4 class="mb-0"><i class="fas fa-user-circle me-2 text-primary"></i>患者: <span class="fw-bold" id="patient-name">未設定姓名</span></h4>
+				<h4 class="mb-0"><i class="fas fa-user-circle me-2 text-primary"></i>使用者: <span class="fw-bold" id="patient-name">未設定姓名</span></h4>
 				<p class="mb-0 text-muted small">ID: <span id="patient-id">無 ID</span> | 性別: <span id="patient-gender-display">未知</span> | 年齡: <span id="patient-age">N/A</span></p>
 			</div>
 			<div>
 				<button class="btn btn-outline-primary" data-bs-target="#patientModal" data-bs-toggle="modal" type="button"><i class="fas fa-cog me-1"></i>設定</button>
 			</div>
 		</div>
-		
 		<div aria-hidden="true" aria-labelledby="patientModalLabel" class="modal fade" id="patientModal" tabindex="-1">
 			<div class="modal-dialog">
 				<div class="modal-content">
-					<form id="patient-info-form">
+					<form id="patient-info-form" name="patient-info-form">
 						<div class="modal-header">
-							<h5 class="modal-title" id="patientModalLabel"><i class="fas fa-user me-2"></i>患者資訊設置</h5><button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+							<h5 class="modal-title" id="patientModalLabel"><i class="fas fa-user me-2"></i>使用者資訊設置</h5><button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
 						</div>
 						<div class="modal-body">
 							<div class="alert alert-info">
-								<i class="fas fa-info-circle me-2"></i> 請填寫並保存患者基本資料，才能生成完整的 FHIR 報告。
+								<i class="fas fa-info-circle me-2"></i> 請填寫並保存使用者基本資料，才能生成完整的 FHIR 報告。
 							</div>
 							<div class="row g-3">
 								<div class="col-md-6">
-									<label class="form-label">姓名</label> <input class="form-control" id="patient-name-input" placeholder="請輸入姓名" type="text" required>
+									<label class="form-label">姓名</label> <input class="form-control" id="patient-name-input" placeholder="請輸入姓名" required="" type="text">
 								</div>
 								<div class="col-md-6">
-									<label class="form-label">身分證字號/病歷號</label> <input class="form-control" id="patient-id-input" placeholder="請輸入身分證字號或病歷號" type="text" required>
+									<label class="form-label">身分證字號/病歷號</label> <input class="form-control" id="patient-id-input" placeholder="請輸入身分證字號或病歷號" required="" type="text">
 								</div>
 								<div class="col-md-6">
-									<label class="form-label">出生年份</label> <input class="form-control" id="patient-birth-year-input" placeholder="例如: 1980" type="number" min="1900" max="2024" required>
+									<label class="form-label">出生年份</label> <input class="form-control" id="patient-birth-year-input" max="2024" min="1900" placeholder="例如: 1980" required="" type="number">
 								</div>
 								<div class="col-md-6">
-									<label class="form-label">性別</label> <select class="form-select" id="patient-gender-input" required>
-										<option value="unknown">未知</option>
-										<option value="male">男性</option>
-										<option value="female">女性</option>
-										<option value="other">其他</option>
+									<label class="form-label">性別</label> <select class="form-select" id="patient-gender-input" required="">
+										<option value="unknown">
+											未知
+										</option>
+										<option value="male">
+											男性
+										</option>
+										<option value="female">
+											女性
+										</option>
+										<option value="other">
+											其他
+										</option>
 									</select>
 								</div>
 							</div>
 						</div>
 						<div class="modal-footer">
-							<button class="btn btn-secondary" data-bs-dismiss="modal" type="button">關閉</button> <button class="btn btn-primary" id="save-patient-btn" type="submit">保存患者資訊</button>
+							<button class="btn btn-secondary" data-bs-dismiss="modal" type="button">關閉</button> <button class="btn btn-primary" id="save-patient-btn" type="submit">保存使用者資訊</button>
 						</div>
 					</form>
 				</div>
 			</div>
 		</div>
-		
 		<div class="row mb-4" id="latest-records-section">
 			<div class="col-md-6">
 				<div class="card bg-white" id="latest-bp-card">
@@ -194,52 +203,45 @@
 				</div>
 			</div>
 		</div>
-		
 		<ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-			<li class="nav-item" role="presentation">
-				<button aria-controls="bp-tab-pane" aria-selected="true" class="nav-link active" data-bs-target="#bp-tab-pane" data-bs-toggle="tab" id="bp-tab" role="tab" type="button"><i class="fas fa-stethoscope me-1"></i>血壓監測</button>
-			</li>
-			<li class="nav-item" role="presentation">
-				<button aria-controls="bs-tab-pane" aria-selected="false" class="nav-link" data-bs-target="#bs-tab-pane" data-bs-toggle="tab" id="bs-tab" role="tab" type="button"><i class="fas fa-tint me-1"></i>血糖監測</button>
-			</li>
-			</ul>
+			<li class="nav-item" role="presentation"><button aria-controls="bp-tab-pane" aria-selected="true" class="nav-link active" data-bs-target="#bp-tab-pane" data-bs-toggle="tab" id="bp-tab" role="tab" type="button"><i class="fas fa-stethoscope me-1"></i>血壓監測</button></li>
+			<li class="nav-item" role="presentation"><button aria-controls="bs-tab-pane" aria-selected="false" class="nav-link" data-bs-target="#bs-tab-pane" data-bs-toggle="tab" id="bs-tab" role="tab" type="button"><i class="fas fa-tint me-1"></i>血糖監測</button></li>
+			<li class="nav-item" role="presentation"><button aria-controls="trend-tab-pane" aria-selected="false" class="nav-link" data-bs-target="#trend-tab-pane" data-bs-toggle="tab" id="trend-tab" role="tab" type="button"><i class="fas fa-chart-line me-1"></i>健康趨勢</button></li>
+		</ul>
 		<div class="tab-content" id="myTabContent">
 			<div aria-labelledby="bp-tab" class="tab-pane fade show active" id="bp-tab-pane" role="tabpanel" tabindex="0">
 				<div class="row">
-					<div class="col-md-6">
+					<div class="col-md-5">
 						<div class="card record-card">
 							<div class="card-header bg-primary text-white">
 								<h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>新增血壓記錄</h5>
 							</div>
 							<div class="card-body">
-								<form id="bp-form">
+								<form id="bp-form" name="bp-form">
 									<div class="mb-3">
-										<label class="form-label" for="bp-date"><i class="fas fa-calendar-alt me-1"></i>測量時間</label> <input class="form-control" id="bp-date" type="datetime-local" required>
+										<label class="form-label" for="bp-date"><i class="fas fa-calendar-alt me-1"></i>測量時間</label> <input class="form-control" id="bp-date" required="" type="datetime-local">
 									</div>
 									<div class="row g-3">
 										<div class="col-4">
-											<label class="form-label" for="bp-systolic">收縮壓 (Sys)</label> <input class="form-control" id="bp-systolic" placeholder="mmHg" type="number" required min="40" max="300">
+											<label class="form-label" for="bp-systolic">收縮壓 (Sys)</label> <input class="form-control" id="bp-systolic" max="300" min="40" placeholder="mmHg" required="" type="number">
 										</div>
 										<div class="col-4">
-											<label class="form-label" for="bp-diastolic">舒張壓 (Dia)</label> <input class="form-control" id="bp-diastolic" placeholder="mmHg" type="number" required min="30" max="200">
+											<label class="form-label" for="bp-diastolic">舒張壓 (Dia)</label> <input class="form-control" id="bp-diastolic" max="200" min="30" placeholder="mmHg" required="" type="number">
 										</div>
 										<div class="col-4">
-											<label class="form-label" for="bp-pulse">脈搏 (Pulse)</label> <input class="form-control" id="bp-pulse" placeholder="bpm" type="number" required min="40" max="200">
+											<label class="form-label" for="bp-pulse">脈搏 (Pulse)</label> <input class="form-control" id="bp-pulse" max="200" min="40" placeholder="bpm" required="" type="number">
 										</div>
 									</div>
 									<div class="mb-3 mt-3 form-check">
 										<input class="form-check-input" id="bp-medication" type="checkbox"> <label class="form-check-label" for="bp-medication"><i class="fas fa-pills me-1"></i>本次是否已服用降壓藥</label>
 									</div>
-									
 									<hr>
 									<div class="mb-3">
-										<label class="form-label" for="bp-image"><i class="fas fa-camera me-1"></i>上傳照片 (OCR)</label>
-										<input class="form-control" id="bp-image" type="file" accept="image/*">
+										<label class="form-label" for="bp-image"><i class="fas fa-camera me-1"></i>上傳照片 (OCR)</label> <input accept="image/*" class="form-control" id="bp-image" type="file">
 									</div>
 									<div class="d-grid mb-3">
-										<button class="btn btn-outline-info" type="button" onclick="handleOCR('bp')"><i class="fas fa-file-image me-1"></i>執行 OCR 辨識</button>
+										<button class="btn btn-outline-info" onclick="handleOCR('bp')" type="button"><i class="fas fa-file-image me-1"></i>執行 OCR 辨識</button>
 									</div>
-									
 									<div class="d-grid">
 										<button class="btn btn-primary btn-lg-custom" type="submit"><i class="fas fa-save me-2"></i>保存血壓記錄</button>
 									</div>
@@ -247,7 +249,7 @@
 							</div>
 						</div>
 					</div>
-					<div class="col-md-6">
+					<div class="col-md-7">
 						<div class="card record-card">
 							<div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
 								<h5 class="mb-0"><i class="fas fa-history me-2"></i>血壓歷史記錄</h5>
@@ -267,8 +269,7 @@
 												<th>服藥</th>
 											</tr>
 										</thead>
-										<tbody class="text-center" id="bp-history">
-											</tbody>
+										<tbody class="text-center" id="bp-history"></tbody>
 									</table>
 								</div>
 								<div class="history-actions p-3">
@@ -281,40 +282,45 @@
 			</div>
 			<div aria-labelledby="bs-tab" class="tab-pane fade" id="bs-tab-pane" role="tabpanel" tabindex="0">
 				<div class="row">
-					<div class="col-md-6">
+					<div class="col-md-5">
 						<div class="card record-card">
 							<div class="card-header bg-warning text-white">
 								<h5 class="mb-0 text-dark"><i class="fas fa-flask me-2"></i>新增血糖記錄</h5>
 							</div>
 							<div class="card-body">
-								<form id="bs-form">
+								<form id="bs-form" name="bs-form">
 									<div class="mb-3">
-										<label class="form-label" for="bs-date"><i class="fas fa-calendar-alt me-1"></i>測量時間</label> <input class="form-control" id="bs-date" type="datetime-local" required>
+										<label class="form-label" for="bs-date"><i class="fas fa-calendar-alt me-1"></i>測量時間</label> <input class="form-control" id="bs-date" required="" type="datetime-local">
 									</div>
 									<div class="mb-3">
-										<label class="form-label" for="bs-value"><i class="fas fa-vial me-1"></i>血糖值 (mg/dL)</label> <input class="form-control" id="bs-value" placeholder="請輸入血糖數值" type="number" required min="10" max="600">
+										<label class="form-label" for="bs-value"><i class="fas fa-vial me-1"></i>血糖值 (mg/dL)</label> <input class="form-control" id="bs-value" max="600" min="10" placeholder="請輸入血糖數值" required="" type="number">
 									</div>
 									<div class="mb-3">
-										<label class="form-label" for="bs-measurement-time"><i class="fas fa-clock me-1"></i>量測時機</label> <select class="form-select" id="bs-measurement-time" required>
-											<option value="fasting">空腹 (Fasting)</option>
-											<option value="before-meal">飯前 (Before Meal)</option>
-											<option value="post-prandial">飯後 (Post Prandial)</option>
-											<option value="before-sleep">睡前 (Before Sleep)</option>
+										<label class="form-label" for="bs-timing"><i class="fas fa-clock me-1"></i>量測時機</label> <select class="form-select" id="bs-timing" required="">
+											<option value="fasting">
+												空腹 (Fasting)
+											</option>
+											<option value="before-meal">
+												飯前 (Before Meal)
+											</option>
+											<option value="post-prandial">
+												飯後 (Post Prandial)
+											</option>
+											<option value="before-sleep">
+												睡前 (Before Sleep)
+											</option>
 										</select>
 									</div>
 									<div class="mb-3 form-check">
-										<input class="form-check-input" id="bs-medication" type="checkbox"> <label class="form-check-label" for="bs-medication"><i class="fas fa-pills me-1"></i>本次是否已服用降血糖藥或胰島素</label>
+										<input class="form-check-input" id="bs-medication" type="checkbox"> <label class="form-check-label" for="bs-medication"><i class="fas fa-pills me-1"></i>本次是否已服用血糖藥或胰島素</label>
 									</div>
-									
 									<hr>
 									<div class="mb-3">
-										<label class="form-label" for="bs-image"><i class="fas fa-camera me-1"></i>上傳照片 (OCR)</label>
-										<input class="form-control" id="bs-image" type="file" accept="image/*">
+										<label class="form-label" for="bs-image"><i class="fas fa-camera me-1"></i>上傳照片 (OCR)</label> <input accept="image/*" class="form-control" id="bs-image" type="file">
 									</div>
 									<div class="d-grid mb-3">
-										<button class="btn btn-outline-info" type="button" onclick="handleOCR('bs')"><i class="fas fa-file-image me-1"></i>執行 OCR 辨識</button>
+										<button class="btn btn-outline-info" onclick="handleOCR('bs')" type="button"><i class="fas fa-file-image me-1"></i>執行 OCR 辨識</button>
 									</div>
-									
 									<div class="d-grid">
 										<button class="btn btn-warning btn-lg-custom text-dark" type="submit"><i class="fas fa-save me-2"></i>保存血糖記錄</button>
 									</div>
@@ -322,7 +328,7 @@
 							</div>
 						</div>
 					</div>
-					<div class="col-md-6">
+					<div class="col-md-7">
 						<div class="card record-card">
 							<div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
 								<h5 class="mb-0 text-dark"><i class="fas fa-history me-2"></i>血糖歷史記錄</h5>
@@ -343,8 +349,7 @@
 												<th>服藥</th>
 											</tr>
 										</thead>
-										<tbody class="text-center" id="bs-history">
-											</tbody>
+										<tbody class="text-center" id="bs-history"></tbody>
 									</table>
 								</div>
 								<div class="history-actions p-3">
@@ -355,9 +360,92 @@
 					</div>
 				</div>
 			</div>
+			<div aria-labelledby="trend-tab" class="tab-pane fade" id="trend-tab-pane" role="tabpanel" tabindex="0">
+				<div class="row mt-4">
+					<div class="col-12">
+						<h4 class="mb-3 text-primary"><i class="fas fa-lightbulb me-2"></i>智慧健康建議</h4>
+						<div id="recommendations-container">
+							<div class="alert alert-info">
+								系統正在分析您的趨勢數據...
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row mt-4">
+					<div class="col-12">
+						<div class="card">
+							<div class="card-header">
+								血壓趨勢圖
+							</div>
+							<div class="card-body">
+								<canvas id="bpChart"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row mt-4">
+					<div class="col-12">
+						<div class="card">
+							<div class="card-header">
+								血糖趨勢圖
+							</div>
+							<div class="card-body">
+								<canvas id="bsChart"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
-	
+	<div aria-labelledby="status-tab" class="tab-pane fade" id="status-tab-pane" role="tabpanel" tabindex="0">
+		<div class="card">
+			<div class="card-header">
+				<i class="fas fa-chart-bar me-1"></i>健康趨勢與建議
+			</div>
+			<div class="card-body" id="patient-status-summary">
+				<p class="text-muted">等待數據輸入後顯示分析結果...</p>
+			</div>
+		</div>
+	</div>
+	<div aria-hidden="true" aria-labelledby="patientModalLabel" class="modal fade" id="patientModal" tabindex="-1">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form id="patient-form" name="patient-form">
+					<div class="modal-header">
+						<h5 class="modal-title" id="patientModalLabel">設定使用者基本資料</h5><button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+					</div>
+					<div class="modal-body">
+						<div class="mb-3">
+							<label class="form-label" for="patient-name-input">姓名</label> <input class="form-control" id="patient-name-input" required="" type="text">
+						</div>
+						<div class="mb-3">
+							<label class="form-label" for="patient-id-input">身分證字號/護照號碼</label> <input class="form-control" id="patient-id-input" required="" type="text">
+						</div>
+						<div class="mb-3">
+							<label class="form-label" for="patient-birth-year-input">出生年份</label> <input class="form-control" id="patient-birth-year-input" max="2025" min="1900" required="" type="number" value="1980">
+						</div>
+						<div class="mb-3">
+							<label class="form-label" for="patient-gender-input">生理性別</label> <select class="form-select" id="patient-gender-input" required="">
+								<option value="male">
+									男性
+								</option>
+								<option value="female">
+									女性
+								</option>
+								<option value="other">
+									其他
+								</option>
+							</select>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button class="btn btn-secondary" data-bs-dismiss="modal" type="button">關閉</button> <button class="btn btn-primary" type="submit">保存並重置記錄</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
 	<div aria-hidden="true" aria-labelledby="fhirModalLabel" class="modal fade" id="fhirModal" tabindex="-1">
 		<div class="modal-dialog modal-lg">
 			<div class="modal-content">
@@ -370,20 +458,17 @@
 						<div id="qrcode"></div>
 					</div>
 					<p class="small text-muted">醫護人員請掃描上方 QR Code 讀取 FHIR 數據</p>
-					
 					<div class="report-toggle my-3">
-						<button class="btn btn-outline-primary" id="text-format-btn">文字顯示 (不換行優化)</button>
-						<button class="btn btn-primary" id="fhir-format-btn">FHIR R4 JSON 格式</button>
+						<button class="btn btn-outline-primary" id="text-format-btn">文字顯示 (不換行優化)</button> <button class="btn btn-primary" id="fhir-format-btn">FHIR R4 JSON 格式</button>
 					</div>
-					
 					<div id="report-content">
-						<div class="text-report" id="text-report-display">報告內容</div>
+						<div class="text-report" id="text-report-display">
+							報告內容
+						</div>
 						<pre class="fhir-report d-none" id="fhir-content-display">FHIR JSON 內容</pre>
 					</div>
-					
 					<div class="action-buttons mt-3">
-						<button class="btn btn-outline-secondary" id="copy-fhir-btn" onclick="copyFhirContent('fhir-content-display')"><i class="fas fa-copy me-1"></i>複製 FHIR JSON</button>
-						<button class="btn btn-outline-info" id="copy-text-report-btn" onclick="copyFhirContent('text-report-display')"><i class="fas fa-copy me-1"></i>複製文字報告</button>
+						<button class="btn btn-outline-secondary" id="copy-fhir-btn" onclick="copyFhirContent('fhir-content-display')"><i class="fas fa-copy me-1"></i>複製 FHIR JSON</button> <button class="btn btn-outline-info" id="copy-text-report-btn" onclick="copyFhirContent('text-report-display')"><i class="fas fa-copy me-1"></i>複製文字報告</button>
 					</div>
 				</div>
 				<div class="modal-footer">
@@ -392,8 +477,11 @@
 			</div>
 		</div>
 	</div>
-	
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-	<script src="script_combined.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+	</script> 
+	<script src="script_combined.js">
+	</script> 
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+	</script>
 </body>
 </html>
