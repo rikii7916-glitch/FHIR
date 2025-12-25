@@ -1,487 +1,1124 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-	<meta charset="UTF-8">
-	<meta content="width=device-width, initial-scale=1.0" name="viewport">
-	<title>Chronic Illness Guardian - 慢性疾病智慧系統</title>
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11">
-	</script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">
-	</script>
-	<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js">
-	</script>
-	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
-	</script>
-	<style>
-	                   body {
-	                       font-size: 18px;
-	                       background-color: #f0f2f5;
-	                       color: #212529;
-	                       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-	                   }
-	                   .container {
-	                       max-width: 900px;
-	                   }
-	                   .header-title {
-	                       color: #0d6efd;
-	                       font-weight: 800;
-	                   }
-	                   .nav-link {
-	                       font-size: 1.1rem;
-	                       font-weight: bold;
-	                       color: #495057;
-	                   }
-	                   .nav-link.active {
-	                       color: #0d6efd !important;
-	                   }
-	                   .card {
-	                       border: none;
-	                       border-radius: 15px;
-	                       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-	                       margin-bottom: 20px;
-	                       overflow: hidden;
-	                   }
-	                   .card-header {
-	                       font-weight: bold;
-	                       padding: 15px 20px;
-	                   }
-	                   .btn-lg-custom {
-	                       padding: 12px 20px;
-	                       font-size: 1.1rem;
-	                       border-radius: 10px;
-	                   }
-	                   .status-indicator {
-	                       font-size: 1.2rem;
-	                       font-weight: bold;
-	                   }
-	                   .normal { color: #198754; }
-	                   .warning { color: #fd7e14; }
-	                   .danger { color: #dc3545; }
-	                   .form-label {
-	                       font-weight: bold;
-	                   }
-	                   .record-table th, .record-table td {
-	                       font-size: 18px;
-	                       vertical-align: middle;
-	                   }
-	                   textarea {
-	                       font-size: 16px;
-	                   }
-	                   .action-buttons {
-	                       display: flex;
-	                       gap: 10px;
-	                       margin-top: 15px;
-	                   }
-	                   .action-buttons .btn {
-	                       flex: 1;
-	                   }
-	                   .fhir-report {
-	                       background-color: #f8f9fa;
-	                       border-left: 5px solid #0d6efd;
-	                       padding: 15px;
-	                       margin-top: 15px;
-	                       text-align: left;
-	                       font-family: monospace;
-	                       font-size: 0.9rem;
-	                       max-height: 300px;
-	                       overflow-y: auto;
-	                   }
-	                   .text-report {
-	                       background-color: #f8f9fa;
-	                       border-left: 5px solid #28a745;
-	                       padding: 15px;
-	                       margin-top: 15px;
-	                       text-align: left;
-	                       font-family: monospace;
-	                       font-size: 0.9rem;
-	                       max-height: 300px;
-	                       overflow-y: auto;
-	                   }
-	                   .patient-info-header {
-	                       background-color: #e9ecef;
-	                       padding: 10px 20px;
-	                       border-radius: 10px;
-	                       padding: 15px;
-	                       margin-bottom: 20px;
-	                   }
-	                   .report-toggle button {
-	                       margin: 5px;
-	                   }
-	                   #qrcode {
-	                       padding: 10px;
-	                       background-color: white;
-	                       display: inline-block;
-	                   }
-	</style>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Chronic Illness Guardian - 慢性疾病智慧系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            font-size: 18px;
+            background-color: #f0f2f5;
+            color: #212529;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .header-title {
+            color: #0d6efd;
+            font-weight: 800;
+        }
+        .nav-link {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #495057;
+        }
+        .nav-link.active {
+            color: #0d6efd !important;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .card-header {
+            font-weight: bold;
+            padding: 15px 20px;
+        }
+        .btn-lg-custom {
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+        }
+        .status-indicator {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .normal { color: #198754; }
+        .warning { color: #fd7e14; }
+        .danger { color: #dc3545; }
+        .form-label {
+            font-weight: bold;
+        }
+        .record-table th, .record-table td {
+            font-size: 18px;
+            vertical-align: middle;
+        }
+        textarea {
+            font-size: 16px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .action-buttons .btn {
+            flex: 1;
+        }
+        .fhir-report {
+            background-color: #f8f9fa;
+            border-left: 5px solid #0d6efd;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .text-report {
+            background-color: #f8f9fa;
+            border-left: 5px solid #28a745;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .patient-info-header {
+            background-color: #e9ecef;
+            padding: 10px 20px;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .report-toggle button {
+            margin: 5px;
+        }
+        #qrcode {
+            padding: 10px;
+            background-color: white;
+            display: inline-block;
+        }
+        
+        /* 新增的健康趨勢樣式 */
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+        .medication-timeline {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .timeline-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .bp-dot { background-color: #0d6efd; }
+        .bs-dot { background-color: #fd7e14; }
+        .med-dot { background-color: #198754; }
+        .ai-recommendation {
+            border-left: 4px solid;
+            padding-left: 15px;
+            margin-bottom: 15px;
+        }
+        .ai-danger { border-left-color: #dc3545; background-color: #f8d7da; }
+        .ai-warning { border-left-color: #ffc107; background-color: #fff3cd; }
+        .ai-info { border-left-color: #0dcaf0; background-color: #d1ecf1; }
+        .ai-success { border-left-color: #198754; background-color: #d1e7dd; }
+        .stat-card {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .trend-indicator {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .trend-up { background-color: #f8d7da; color: #dc3545; }
+        .trend-down { background-color: #d1e7dd; color: #198754; }
+        .trend-stable { background-color: #fff3cd; color: #856404; }
+    </style>
 </head>
 <body>
-	<div class="container py-4">
-		<div class="text-center mb-4">
-			<h1 class="header-title"><i class="fas fa-heartbeat me-2"></i>Chronic Illness Guardian</h1>
-			<p class="text-muted">基於 FHIR 建立的 慢性疾病「智慧」系統</p>
-		</div>
-		<div class="patient-info-header d-flex justify-content-between align-items-center mb-4">
-			<div>
-				<h4 class="mb-0"><i class="fas fa-user-circle me-2 text-primary"></i>使用者: <span class="fw-bold" id="patient-name">未設定姓名</span></h4>
-				<p class="mb-0 text-muted small">ID: <span id="patient-id">無 ID</span> | 性別: <span id="patient-gender-display">未知</span> | 年齡: <span id="patient-age">N/A</span></p>
-			</div>
-			<div>
-				<button class="btn btn-outline-primary" data-bs-target="#patientModal" data-bs-toggle="modal" type="button"><i class="fas fa-cog me-1"></i>設定</button>
-			</div>
-		</div>
-		<div aria-hidden="true" aria-labelledby="patientModalLabel" class="modal fade" id="patientModal" tabindex="-1">
-			<div class="modal-dialog">
-				<div class="modal-content">
-					<form id="patient-info-form" name="patient-info-form">
-						<div class="modal-header">
-							<h5 class="modal-title" id="patientModalLabel"><i class="fas fa-user me-2"></i>使用者資訊設置</h5><button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
-						</div>
-						<div class="modal-body">
-							<div class="alert alert-info">
-								<i class="fas fa-info-circle me-2"></i> 請填寫並保存使用者基本資料，才能生成完整的 FHIR 報告。
-							</div>
-							<div class="row g-3">
-								<div class="col-md-6">
-									<label class="form-label">姓名</label> <input class="form-control" id="patient-name-input" placeholder="請輸入姓名" required="" type="text">
-								</div>
-								<div class="col-md-6">
-									<label class="form-label">身分證字號/病歷號</label> <input class="form-control" id="patient-id-input" placeholder="請輸入身分證字號或病歷號" required="" type="text">
-								</div>
-								<div class="col-md-6">
-									<label class="form-label">出生年份</label> <input class="form-control" id="patient-birth-year-input" max="2024" min="1900" placeholder="例如: 1980" required="" type="number">
-								</div>
-								<div class="col-md-6">
-									<label class="form-label">性別</label> <select class="form-select" id="patient-gender-input" required="">
-										<option value="unknown">
-											未知
-										</option>
-										<option value="male">
-											男性
-										</option>
-										<option value="female">
-											女性
-										</option>
-										<option value="other">
-											其他
-										</option>
-									</select>
-								</div>
-							</div>
-						</div>
-						<div class="modal-footer">
-							<button class="btn btn-secondary" data-bs-dismiss="modal" type="button">關閉</button> <button class="btn btn-primary" id="save-patient-btn" type="submit">保存使用者資訊</button>
-						</div>
-					</form>
-				</div>
-			</div>
-		</div>
-		<div class="row mb-4" id="latest-records-section">
-			<div class="col-md-6">
-				<div class="card bg-white" id="latest-bp-card">
-					<div class="card-body">
-						<h5 class="card-title text-primary"><i class="fas fa-stethoscope me-2"></i>最新血壓</h5>
-						<div class="d-flex justify-content-between align-items-center">
-							<h2 class="display-6 fw-bold mb-0"><span id="latest-bp-sys">--</span> / <span id="latest-bp-dia">--</span><span class="fs-4 ms-1 text-muted">mmHg</span></h2><span class="badge bg-success" id="bp-status-badge">未測量</span>
-						</div>
-						<p class="mb-1">脈搏: <span id="latest-bp-pulse">--</span> bpm</p>
-						<p class="card-text small text-muted">時間: <span id="latest-bp-time">--</span></p>
-					</div>
-				</div>
-			</div>
-			<div class="col-md-6">
-				<div class="card bg-white" id="latest-bs-card">
-					<div class="card-body">
-						<h5 class="card-title text-warning"><i class="fas fa-tint me-2"></i>最新血糖</h5>
-						<div class="d-flex justify-content-between align-items-center">
-							<h2 class="display-6 fw-bold mb-0"><span id="latest-bs-value">--</span> <span class="fs-4 ms-1 text-muted" id="latest-bs-unit">mg/dL</span></h2><span class="badge bg-success" id="bs-status-badge">未測量</span>
-						</div>
-						<p class="mb-1">時機: <span id="latest-bs-time-type">--</span></p>
-						<p class="card-text small text-muted">時間: <span id="latest-bs-time">--</span></p>
-					</div>
-				</div>
-			</div>
-		</div>
-		<ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-			<li class="nav-item" role="presentation"><button aria-controls="bp-tab-pane" aria-selected="true" class="nav-link active" data-bs-target="#bp-tab-pane" data-bs-toggle="tab" id="bp-tab" role="tab" type="button"><i class="fas fa-stethoscope me-1"></i>血壓監測</button></li>
-			<li class="nav-item" role="presentation"><button aria-controls="bs-tab-pane" aria-selected="false" class="nav-link" data-bs-target="#bs-tab-pane" data-bs-toggle="tab" id="bs-tab" role="tab" type="button"><i class="fas fa-tint me-1"></i>血糖監測</button></li>
-			<li class="nav-item" role="presentation"><button aria-controls="trend-tab-pane" aria-selected="false" class="nav-link" data-bs-target="#trend-tab-pane" data-bs-toggle="tab" id="trend-tab" role="tab" type="button"><i class="fas fa-chart-line me-1"></i>健康趨勢</button></li>
-		</ul>
-		<div class="tab-content" id="myTabContent">
-			<div aria-labelledby="bp-tab" class="tab-pane fade show active" id="bp-tab-pane" role="tabpanel" tabindex="0">
-				<div class="row">
-					<div class="col-md-5">
-						<div class="card record-card">
-							<div class="card-header bg-primary text-white">
-								<h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>新增血壓記錄</h5>
-							</div>
-							<div class="card-body">
-								<form id="bp-form" name="bp-form">
-									<div class="mb-3">
-										<label class="form-label" for="bp-date"><i class="fas fa-calendar-alt me-1"></i>測量時間</label> <input class="form-control" id="bp-date" required="" type="datetime-local">
-									</div>
-									<div class="row g-3">
-										<div class="col-4">
-											<label class="form-label" for="bp-systolic">收縮壓 (Sys)</label> <input class="form-control" id="bp-systolic" max="300" min="40" placeholder="mmHg" required="" type="number">
-										</div>
-										<div class="col-4">
-											<label class="form-label" for="bp-diastolic">舒張壓 (Dia)</label> <input class="form-control" id="bp-diastolic" max="200" min="30" placeholder="mmHg" required="" type="number">
-										</div>
-										<div class="col-4">
-											<label class="form-label" for="bp-pulse">脈搏 (Pulse)</label> <input class="form-control" id="bp-pulse" max="200" min="40" placeholder="bpm" required="" type="number">
-										</div>
-									</div>
-									<div class="mb-3 mt-3 form-check">
-										<input class="form-check-input" id="bp-medication" type="checkbox"> <label class="form-check-label" for="bp-medication"><i class="fas fa-pills me-1"></i>本次是否已服用降壓藥</label>
-									</div>
-									<hr>
-									<div class="mb-3">
-										<label class="form-label" for="bp-image"><i class="fas fa-camera me-1"></i>上傳照片 (OCR)</label> <input accept="image/*" class="form-control" id="bp-image" type="file">
-									</div>
-									<div class="d-grid mb-3">
-										<button class="btn btn-outline-info" onclick="handleOCR('bp')" type="button"><i class="fas fa-file-image me-1"></i>執行 OCR 辨識</button>
-									</div>
-									<div class="d-grid">
-										<button class="btn btn-primary btn-lg-custom" type="submit"><i class="fas fa-save me-2"></i>保存血壓記錄</button>
-									</div>
-								</form>
-							</div>
-						</div>
-					</div>
-					<div class="col-md-7">
-						<div class="card record-card">
-							<div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-								<h5 class="mb-0"><i class="fas fa-history me-2"></i>血壓歷史記錄</h5>
-								<div class="form-check">
-									<input class="form-check-input" id="select-all-bp" type="checkbox"> <label class="form-check-label text-white" for="select-all-bp">全選</label>
-								</div>
-							</div>
-							<div class="card-body p-0">
-								<div class="table-responsive">
-									<table class="table record-table mb-0">
-										<thead>
-											<tr class="text-center">
-												<th></th>
-												<th>時間</th>
-												<th>血壓/脈搏</th>
-												<th>狀態</th>
-												<th>服藥</th>
-											</tr>
-										</thead>
-										<tbody class="text-center" id="bp-history"></tbody>
-									</table>
-								</div>
-								<div class="history-actions p-3">
-									<button class="btn btn-outline-danger" onclick="generateFHIRFromHistory('bp')"><i class="fas fa-qrcode me-1"></i>生成FHIR</button> <button class="btn btn-outline-success" onclick="sendReportFromHistory('bp')"><i class="fas fa-envelope me-1"></i>回傳Gmail</button>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div aria-labelledby="bs-tab" class="tab-pane fade" id="bs-tab-pane" role="tabpanel" tabindex="0">
-				<div class="row">
-					<div class="col-md-5">
-						<div class="card record-card">
-							<div class="card-header bg-warning text-white">
-								<h5 class="mb-0 text-dark"><i class="fas fa-flask me-2"></i>新增血糖記錄</h5>
-							</div>
-							<div class="card-body">
-								<form id="bs-form" name="bs-form">
-									<div class="mb-3">
-										<label class="form-label" for="bs-date"><i class="fas fa-calendar-alt me-1"></i>測量時間</label> <input class="form-control" id="bs-date" required="" type="datetime-local">
-									</div>
-									<div class="mb-3">
-										<label class="form-label" for="bs-value"><i class="fas fa-vial me-1"></i>血糖值 (mg/dL)</label> <input class="form-control" id="bs-value" max="600" min="10" placeholder="請輸入血糖數值" required="" type="number">
-									</div>
-									<div class="mb-3">
-										<label class="form-label" for="bs-timing"><i class="fas fa-clock me-1"></i>量測時機</label> <select class="form-select" id="bs-timing" required="">
-											<option value="fasting">
-												空腹 (Fasting)
-											</option>
-											<option value="before-meal">
-												飯前 (Before Meal)
-											</option>
-											<option value="post-prandial">
-												飯後 (Post Prandial)
-											</option>
-											<option value="before-sleep">
-												睡前 (Before Sleep)
-											</option>
-										</select>
-									</div>
-									<div class="mb-3 form-check">
-										<input class="form-check-input" id="bs-medication" type="checkbox"> <label class="form-check-label" for="bs-medication"><i class="fas fa-pills me-1"></i>本次是否已服用血糖藥或胰島素</label>
-									</div>
-									<hr>
-									<div class="mb-3">
-										<label class="form-label" for="bs-image"><i class="fas fa-camera me-1"></i>上傳照片 (OCR)</label> <input accept="image/*" class="form-control" id="bs-image" type="file">
-									</div>
-									<div class="d-grid mb-3">
-										<button class="btn btn-outline-info" onclick="handleOCR('bs')" type="button"><i class="fas fa-file-image me-1"></i>執行 OCR 辨識</button>
-									</div>
-									<div class="d-grid">
-										<button class="btn btn-warning btn-lg-custom text-dark" type="submit"><i class="fas fa-save me-2"></i>保存血糖記錄</button>
-									</div>
-								</form>
-							</div>
-						</div>
-					</div>
-					<div class="col-md-7">
-						<div class="card record-card">
-							<div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
-								<h5 class="mb-0 text-dark"><i class="fas fa-history me-2"></i>血糖歷史記錄</h5>
-								<div class="form-check">
-									<input class="form-check-input" id="select-all-bs" type="checkbox"> <label class="form-check-label text-dark" for="select-all-bs">全選</label>
-								</div>
-							</div>
-							<div class="card-body p-0">
-								<div class="table-responsive">
-									<table class="table record-table mb-0">
-										<thead>
-											<tr class="text-center">
-												<th></th>
-												<th>時間</th>
-												<th>血糖值</th>
-												<th>時機</th>
-												<th>狀態</th>
-												<th>服藥</th>
-											</tr>
-										</thead>
-										<tbody class="text-center" id="bs-history"></tbody>
-									</table>
-								</div>
-								<div class="history-actions p-3">
-									<button class="btn btn-outline-danger" onclick="generateFHIRFromHistory('bs')"><i class="fas fa-qrcode me-1"></i>生成FHIR</button> <button class="btn btn-outline-success" onclick="sendReportFromHistory('bs')"><i class="fas fa-envelope me-1"></i>回傳Gmail</button>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div aria-labelledby="trend-tab" class="tab-pane fade" id="trend-tab-pane" role="tabpanel" tabindex="0">
-				<div class="row mt-4">
-					<div class="col-12">
-						<h4 class="mb-3 text-primary"><i class="fas fa-lightbulb me-2"></i>智慧健康建議</h4>
-						<div id="recommendations-container">
-							<div class="alert alert-info">
-								系統正在分析您的趨勢數據...
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="row mt-4">
-					<div class="col-12">
-						<div class="card">
-							<div class="card-header">
-								血壓趨勢圖
-							</div>
-							<div class="card-body">
-								<canvas id="bpChart"></canvas>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="row mt-4">
-					<div class="col-12">
-						<div class="card">
-							<div class="card-header">
-								血糖趨勢圖
-							</div>
-							<div class="card-body">
-								<canvas id="bsChart"></canvas>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div aria-labelledby="status-tab" class="tab-pane fade" id="status-tab-pane" role="tabpanel" tabindex="0">
-		<div class="card">
-			<div class="card-header">
-				<i class="fas fa-chart-bar me-1"></i>健康趨勢與建議
-			</div>
-			<div class="card-body" id="patient-status-summary">
-				<p class="text-muted">等待數據輸入後顯示分析結果...</p>
-			</div>
-		</div>
-	</div>
-	<div aria-hidden="true" aria-labelledby="patientModalLabel" class="modal fade" id="patientModal" tabindex="-1">
-		<div class="modal-dialog">
-			<div class="modal-content">
-				<form id="patient-form" name="patient-form">
-					<div class="modal-header">
-						<h5 class="modal-title" id="patientModalLabel">設定使用者基本資料</h5><button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
-					</div>
-					<div class="modal-body">
-						<div class="mb-3">
-							<label class="form-label" for="patient-name-input">姓名</label> <input class="form-control" id="patient-name-input" required="" type="text">
-						</div>
-						<div class="mb-3">
-							<label class="form-label" for="patient-id-input">身分證字號/護照號碼</label> <input class="form-control" id="patient-id-input" required="" type="text">
-						</div>
-						<div class="mb-3">
-							<label class="form-label" for="patient-birth-year-input">出生年份</label> <input class="form-control" id="patient-birth-year-input" max="2025" min="1900" required="" type="number" value="1980">
-						</div>
-						<div class="mb-3">
-							<label class="form-label" for="patient-gender-input">生理性別</label> <select class="form-select" id="patient-gender-input" required="">
-								<option value="male">
-									男性
-								</option>
-								<option value="female">
-									女性
-								</option>
-								<option value="other">
-									其他
-								</option>
-							</select>
-						</div>
-					</div>
-					<div class="modal-footer">
-						<button class="btn btn-secondary" data-bs-dismiss="modal" type="button">關閉</button> <button class="btn btn-primary" type="submit">保存並重置記錄</button>
-					</div>
-				</form>
-			</div>
-		</div>
-	</div>
-	<div aria-hidden="true" aria-labelledby="fhirModalLabel" class="modal fade" id="fhirModal" tabindex="-1">
-		<div class="modal-dialog modal-lg">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title" id="fhirModalLabel">FHIR 資源 QR Code 與報告</h5><button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
-				</div>
-				<div class="modal-body text-center">
-					<p class="mb-2 text-danger fw-bold" id="fhir-modal-title"></p>
-					<div class="d-flex justify-content-center mb-3">
-						<div id="qrcode"></div>
-					</div>
-					<p class="small text-muted">醫護人員請掃描上方 QR Code 讀取 FHIR 數據</p>
-					<div class="report-toggle my-3">
-						<button class="btn btn-outline-primary" id="text-format-btn">文字顯示 (不換行優化)</button> <button class="btn btn-primary" id="fhir-format-btn">FHIR R4 JSON 格式</button>
-					</div>
-					<div id="report-content">
-						<div class="text-report" id="text-report-display">
-							報告內容
-						</div>
-						<pre class="fhir-report d-none" id="fhir-content-display">FHIR JSON 內容</pre>
-					</div>
-					<div class="action-buttons mt-3">
-						<button class="btn btn-outline-secondary" id="copy-fhir-btn" onclick="copyFhirContent('fhir-content-display')"><i class="fas fa-copy me-1"></i>複製 FHIR JSON</button> <button class="btn btn-outline-info" id="copy-text-report-btn" onclick="copyFhirContent('text-report-display')"><i class="fas fa-copy me-1"></i>複製文字報告</button>
-					</div>
-				</div>
-				<div class="modal-footer">
-					<button class="btn btn-secondary" data-bs-dismiss="modal" type="button">關閉</button>
-				</div>
-			</div>
-		</div>
-	</div>
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
-	</script> 
-	<script src="script_combined.js">
-	</script> 
-	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
-	</script>
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 2000;">
+        <div class="btn-group shadow border">
+            <button class="btn btn-light btn-sm" onclick="adjustFontSize(1.1)" title="放大字體"><i class="fas fa-plus"></i></button>
+            <button class="btn btn-light btn-sm" onclick="adjustFontSize(0.9)" title="縮小字體"><i class="fas fa-minus"></i></button>
+        </div>
+    </div>
+    <div class="container py-4">
+        <div class="text-center mb-4">
+            <h1 class="header-title"><i class="fas fa-heartbeat me-2"></i>Chronic Illness Guardian</h1>
+            <p class="text-muted">基於 FHIR 建立的 慢性疾病「智慧」系統</p>
+        </div>
+        <div class="patient-info-header d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="mb-0"><i class="fas fa-user-circle me-2 text-primary"></i>使用者: <span class="fw-bold" id="patient-name">未設定姓名</span></h4>
+                <p class="mb-0 text-muted small">ID: <span id="patient-id">無 ID</span> | 性別: <span id="patient-gender-display">未知</span> | 年齡: <span id="patient-age">N/A</span></p>
+            </div>
+            <div>
+                <button class="btn btn-outline-primary" data-bs-target="#patientModal" data-bs-toggle="modal" type="button"><i class="fas fa-cog me-1"></i>設定</button>
+            </div>
+        </div>
+        <div aria-hidden="true" aria-labelledby="patientModalLabel" class="modal fade" id="patientModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form id="patient-info-form" name="patient-info-form">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="patientModalLabel"><i class="fas fa-user me-2"></i>使用者資訊設置</h5>
+                            <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i> 請填寫並保存使用者基本資料，才能生成完整的 FHIR 報告。
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">姓名</label> 
+                                    <input class="form-control" id="patient-name-input" placeholder="請輸入姓名" required="" type="text">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">身分證字號/病歷號</label> 
+                                    <input class="form-control" id="patient-id-input" placeholder="請輸入身分證字號或病歷號" required="" type="text">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">出生年份</label> 
+                                    <input class="form-control" id="patient-birth-year-input" max="2024" min="1900" placeholder="例如: 1980" required="" type="number">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">性別</label> 
+                                    <select class="form-select" id="patient-gender-input" required="">
+                                        <option value="unknown">未知</option>
+                                        <option value="male">男性</option>
+                                        <option value="female">女性</option>
+                                        <option value="other">其他</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">緊急聯絡人 Email</label>
+                                    <input type="email" class="form-control" id="patient-email" placeholder="聯絡人郵件">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">關閉</button> 
+                            <button class="btn btn-primary" id="save-patient-btn" type="submit">保存使用者資訊</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="row mb-4" id="latest-records-section">
+            <div class="col-md-6">
+                <div class="card bg-white" id="latest-bp-card">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary"><i class="fas fa-stethoscope me-2"></i>最新血壓</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h2 class="display-6 fw-bold mb-0"><span id="latest-bp-sys">--</span> / <span id="latest-bp-dia">--</span><span class="fs-4 ms-1 text-muted">mmHg</span></h2>
+                            <span class="badge bg-success" id="bp-status-badge">未測量</span>
+                        </div>
+                        <p class="mb-1">脈搏: <span id="latest-bp-pulse">--</span> bpm</p>
+                        <p class="card-text small text-muted">時間: <span id="latest-bp-time">--</span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-white" id="latest-bs-card">
+                    <div class="card-body">
+                        <h5 class="card-title text-warning"><i class="fas fa-tint me-2"></i>最新血糖</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h2 class="display-6 fw-bold mb-0"><span id="latest-bs-value">--</span> <span class="fs-4 ms-1 text-muted" id="latest-bs-unit">mg/dL</span></h2>
+                            <span class="badge bg-success" id="bs-status-badge">未測量</span>
+                        </div>
+                        <p class="mb-1">時機: <span id="latest-bs-time-type">--</span></p>
+                        <p class="card-text small text-muted">時間: <span id="latest-bs-time">--</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 修正後的標籤結構 -->
+        <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button aria-controls="bp-tab-pane" aria-selected="true" class="nav-link active" data-bs-target="#bp-tab-pane" data-bs-toggle="tab" id="bp-tab" role="tab" type="button">
+                    <i class="fas fa-stethoscope me-1"></i>血壓監測
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button aria-controls="bs-tab-pane" aria-selected="false" class="nav-link" data-bs-target="#bs-tab-pane" data-bs-toggle="tab" id="bs-tab" role="tab" type="button">
+                    <i class="fas fa-tint me-1"></i>血糖監測
+                </button>
+            </li>
+			<li class="nav-item" role="presentation">
+                <button aria-controls="trend-tab-pane" aria-selected="false" class="nav-link" data-bs-target="#trend-tab-pane" data-bs-toggle="tab" id="trend-tab" role="tab" type="button">
+                    <i class="fas fa-chart-line me-1"></i>健康趨勢
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button aria-controls="med-tab-pane" aria-selected="false" class="nav-link" data-bs-target="#med-tab-pane" data-bs-toggle="tab" id="med-tab" role="tab" type="button">
+                    <i class="fas fa-pills me-1"></i>藥物紀錄
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="myTabContent">
+            <!-- 血壓監測 -->
+            <div aria-labelledby="bp-tab" class="tab-pane fade show active" id="bp-tab-pane" role="tabpanel" tabindex="0">
+                <div class="row">
+                    <div class="col-md-5">
+                        <div class="card record-card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>新增血壓記錄</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="bp-form" name="bp-form">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="bp-date"><i class="fas fa-calendar-alt me-1"></i>測量時間</label> 
+                                        <input class="form-control" id="bp-date" required="" type="datetime-local">
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-4">
+                                            <label class="form-label" for="bp-systolic">收縮壓 (Sys)</label> 
+                                            <input class="form-control" id="bp-systolic" max="300" min="40" placeholder="mmHg" required="" type="number">
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label" for="bp-diastolic">舒張壓 (Dia)</label> 
+                                            <input class="form-control" id="bp-diastolic" max="200" min="30" placeholder="mmHg" required="" type="number">
+                                        </div>
+                                        <div class="col-4">
+                                            <label class="form-label" for="bp-pulse">脈搏 (Pulse)</label> 
+                                            <input class="form-control" id="bp-pulse" max="200" min="40" placeholder="bpm" required="" type="number">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3 mt-3 form-check">
+                                        <input class="form-check-input" id="bp-medication" type="checkbox"> 
+                                        <label class="form-check-label" for="bp-medication"><i class="fas fa-pills me-1"></i>本次是否已服用降壓藥</label>
+                                    </div>
+                                    <hr>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="bp-image"><i class="fas fa-camera me-1"></i>上傳照片 (OCR)</label> 
+                                        <input accept="image/*" class="form-control" id="bp-image" type="file">
+                                    </div>
+                                    <div class="d-grid mb-3">
+                                        <button class="btn btn-outline-info" onclick="handleOCR('bp')" type="button"><i class="fas fa-file-image me-1"></i>執行 OCR 辨識</button>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button class="btn btn-primary btn-lg-custom" type="submit"><i class="fas fa-save me-2"></i>保存血壓記錄</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-7">
+                        <div class="card record-card">
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-history me-2"></i>血壓歷史記錄</h5>
+                                <div class="form-check">
+                                    <input class="form-check-input" id="select-all-bp" type="checkbox"> 
+                                    <label class="form-check-label text-white" for="select-all-bp">全選</label>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table record-table mb-0">
+                                        <thead>
+                                            <tr class="text-center">
+                                                <th></th>
+                                                <th>時間</th>
+                                                <th>血壓/脈搏</th>
+                                                <th>狀態</th>
+                                                <th>服藥</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-center" id="bp-history"></tbody>
+                                    </table>
+                                </div>
+                                <div class="history-actions p-3">
+                                    <button class="btn btn-outline-danger" onclick="generateFHIRFromHistory('bp')"><i class="fas fa-qrcode me-1"></i>生成FHIR</button> 
+                                    <button class="btn btn-outline-success" onclick="sendReportFromHistory('bp')"><i class="fas fa-envelope me-1"></i>回傳Gmail</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 血糖監測 -->
+            <div aria-labelledby="bs-tab" class="tab-pane fade" id="bs-tab-pane" role="tabpanel" tabindex="0">
+                <div class="row">
+                    <div class="col-md-5">
+                        <div class="card record-card">
+                            <div class="card-header bg-warning text-white">
+                                <h5 class="mb-0 text-dark"><i class="fas fa-flask me-2"></i>新增血糖記錄</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="bs-form" name="bs-form">
+                                    <div class="mb-3">
+                                        <label class="form-label" for="bs-date"><i class="fas fa-calendar-alt me-1"></i>測量時間</label> 
+                                        <input class="form-control" id="bs-date" required="" type="datetime-local">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="bs-value"><i class="fas fa-vial me-1"></i>血糖值 (mg/dL)</label> 
+                                        <input class="form-control" id="bs-value" max="600" min="10" placeholder="請輸入血糖數值" required="" type="number">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="bs-timing"><i class="fas fa-clock me-1"></i>量測時機</label> 
+                                        <select class="form-select" id="bs-timing" required="">
+                                            <option value="fasting">空腹 (Fasting)</option>
+                                            <option value="before-meal">飯前 (Before Meal)</option>
+                                            <option value="post-prandial">飯後 (Post Prandial)</option>
+                                            <option value="before-sleep">睡前 (Before Sleep)</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3 form-check">
+                                        <input class="form-check-input" id="bs-medication" type="checkbox"> 
+                                        <label class="form-check-label" for="bs-medication"><i class="fas fa-pills me-1"></i>本次是否已服用血糖藥或胰島素</label>
+                                    </div>
+                                    <hr>
+                                    <div class="mb-3">
+                                        <label class="form-label" for="bs-image"><i class="fas fa-camera me-1"></i>上傳照片 (OCR)</label> 
+                                        <input accept="image/*" class="form-control" id="bs-image" type="file">
+                                    </div>
+                                    <div class="d-grid mb-3">
+                                        <button class="btn btn-outline-info" onclick="handleOCR('bs')" type="button"><i class="fas fa-file-image me-1"></i>執行 OCR 辨識</button>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button class="btn btn-warning btn-lg-custom text-dark" type="submit"><i class="fas fa-save me-2"></i>保存血糖記錄</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-7">
+                        <div class="card record-card">
+                            <div class="card-header bg-warning text-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 text-dark"><i class="fas fa-history me-2"></i>血糖歷史記錄</h5>
+                                <div class="form-check">
+                                    <input class="form-check-input" id="select-all-bs" type="checkbox"> 
+                                    <label class="form-check-label text-dark" for="select-all-bs">全選</label>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table record-table mb-0">
+                                        <thead>
+                                            <tr class="text-center">
+                                                <th></th>
+                                                <th>時間</th>
+                                                <th>血糖值</th>
+                                                <th>時機</th>
+                                                <th>狀態</th>
+                                                <th>服藥</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-center" id="bs-history"></tbody>
+                                    </table>
+                                </div>
+                                <div class="history-actions p-3">
+                                    <button class="btn btn-outline-danger" onclick="generateFHIRFromHistory('bs')"><i class="fas fa-qrcode me-1"></i>生成FHIR</button> 
+                                    <button class="btn btn-outline-success" onclick="sendReportFromHistory('bs')"><i class="fas fa-envelope me-1"></i>回傳Gmail</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 健康趨勢 -->
+            <div aria-labelledby="trend-tab" class="tab-pane fade" id="trend-tab-pane" role="tabpanel" tabindex="0">
+                <div class="container-fluid py-3">
+                    <!-- 時間範圍選擇 -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="btn-group">
+                            <button class="btn btn-outline-primary active" data-period="7">最近7天</button>
+                            <button class="btn btn-outline-primary" data-period="30">最近30天</button>
+                            <button class="btn btn-outline-primary" data-period="90">最近90天</button>
+                        </div>
+                    </div>
+
+                    <!-- 數據概覽卡片 -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="stat-card bg-white">
+                                <div class="stat-label">平均收縮壓</div>
+                                <div class="stat-value text-primary" id="avg-systolic">-- <span class="fs-6">mmHg</span></div>
+                                <span class="trend-indicator" id="systolic-trend">--</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card bg-white">
+                                <div class="stat-label">平均舒張壓</div>
+                                <div class="stat-value text-info" id="avg-diastolic">-- <span class="fs-6">mmHg</span></div>
+                                <span class="trend-indicator" id="diastolic-trend">--</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card bg-white">
+                                <div class="stat-label">平均空腹血糖</div>
+                                <div class="stat-value text-warning" id="avg-fasting-bs">-- <span class="fs-6">mg/dL</span></div>
+                                <span class="trend-indicator" id="bs-trend">--</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card bg-white">
+                                <div class="stat-label">服藥遵從度</div>
+                                <div class="stat-value text-success" id="med-adherence">--%</div>
+                                <span class="trend-indicator" id="adherence-trend">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 圖表區域 -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fas fa-heartbeat me-2"></i>血壓趨勢</h5>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show-medication-bp" checked>
+                                        <label class="form-check-label text-white" for="show-medication-bp">顯示服藥點</label>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="bp-trend-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fas fa-tint me-2"></i>血糖趨勢</h5>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="show-medication-bs" checked>
+                                        <label class="form-check-label text-dark" for="show-medication-bs">顯示服藥點</label>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container">
+                                        <canvas id="bs-trend-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+					<!-- AI分析與建議 -->
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-robot me-2"></i>AI 健康分析與建議</h5>
+                        </div>
+                        <div class="card-body" id="ai-recommendations">
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-robot fa-2x mb-2"></i>
+                                <p>載入分析中...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 藥物時間軸 -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0"><i class="fas fa-pills me-2"></i>藥物時間軸</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="medication-timeline" id="medication-timeline">
+                                <div class="text-center text-muted py-4">
+                                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                    <p>暫無時間軸數據</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 藥物紀錄 -->
+            <div aria-labelledby="med-tab" class="tab-pane fade" id="med-tab-pane" role="tabpanel" tabindex="0">
+                <div class="container-fluid py-3">
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="card shadow-sm mb-4">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0"><i class="fas fa-pills me-2"></i>新增用藥紀錄</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label fw-bold">1. 篩選種類</label>
+                                            <select class="form-select" id="med-category-select" onchange="filterDrugList()">
+                                                <option value="all">全部顯示</option>
+                                                <option value="diabetes">血糖用藥</option>
+                                                <option value="depression">憂鬱症/身心科</option>
+                                                <option value="hypertension">血壓用藥</option>
+                                            </select>
+                                        </div>
+                    
+                                        <div class="col-12">
+                                            <label class="form-label fw-bold">2. 搜尋藥物</label>
+                                            <input type="text" class="form-control" id="med-name-input" list="drug-datalist" 
+                                                   placeholder="輸入關鍵字 (如: Metformin)..." onchange="checkInteractions()">
+                                            <datalist id="drug-datalist">
+                                            </datalist>
+                                        </div>
+                                        
+                                        <div id="med-info-card" class="col-12 d-none">
+                                            <div class="card bg-light border-info">
+                                                <div class="card-body py-2">
+                                                    <h6 class="text-info fw-bold mb-1"><i class="fas fa-info-circle me-1"></i>藥物資訊</h6>
+                                                    <p class="small mb-1 text-muted" id="med-side-effect">副作用：--</p>
+                                                    <div id="med-risk-badge" class="badge bg-warning text-dark d-none">交互作用風險</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                    
+                                        <div class="col-12">
+                                            <label class="form-label fw-bold">3. 服用時間</label>
+                                            <input type="datetime-local" class="form-control" id="med-time-input">
+                                        </div>
+                    
+                                        <div class="col-12 d-grid">
+                                            <button class="btn btn-success" onclick="addMedicationRecord()">
+                                                <i class="fas fa-plus me-2"></i>新增紀錄
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="interaction-alert" class="alert alert-danger mt-3 d-none animate__animated animate__headShake">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>注意：</strong> <span id="interaction-msg"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-7">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>近期用藥紀錄</h5>
+                                </div>
+                                <div class="card-body p-0">
+                                    <ul class="list-group list-group-flush" id="med-record-list">
+                                        <li class="list-group-item text-muted p-3">暫無紀錄</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- FHIR 模態框 -->
+        <div aria-hidden="true" aria-labelledby="fhirModalLabel" class="modal fade" id="fhirModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="fhirModalLabel">FHIR 資源 QR Code 與報告</h5>
+                        <button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p class="mb-2 text-danger fw-bold" id="fhir-modal-title"></p>
+                        <div class="d-flex justify-content-center mb-3">
+                            <div id="qrcode"></div>
+                        </div>
+                        <p class="small text-muted">醫護人員請掃描上方 QR Code 讀取 FHIR 數據</p>
+                        <div class="report-toggle my-3">
+                            <button class="btn btn-outline-primary" id="text-format-btn">文字顯示 (不換行優化)</button> 
+                            <button class="btn btn-primary" id="fhir-format-btn">FHIR R4 JSON 格式</button>
+                        </div>
+                        <div id="report-content">
+                            <div class="text-report" id="text-report-display">報告內容</div>
+                            <pre class="fhir-report d-none" id="fhir-content-display">FHIR JSON 內容</pre>
+                        </div>
+                        <div class="action-buttons mt-3">
+                            <button class="btn btn-outline-secondary" id="copy-fhir-btn" onclick="copyFhirContent('fhir-content-display')"><i class="fas fa-copy me-1"></i>複製 FHIR JSON</button> 
+                            <button class="btn btn-outline-info" id="copy-text-report-btn" onclick="copyFhirContent('text-report-display')"><i class="fas fa-copy me-1"></i>複製文字報告</button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">關閉</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> 
+    <script src="script_combined.js"></script>
+    
+    <script>
+        // 健康趨勢頁面的專用功能
+        let trendChartBp = null;
+        let trendChartBs = null;
+        let currentPeriod = 7; // 預設顯示7天
+        
+        // 初始化健康趨勢頁面
+        function initTrendPage() {
+            updateTrendStats();
+            renderTrendCharts();
+            renderMedicationTimeline();
+            generateAIRecommendations();
+            
+            // 綁定時間範圍切換事件
+            document.querySelectorAll('[data-period]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('[data-period]').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentPeriod = parseInt(this.dataset.period);
+                    updateTrendPage();
+                });
+            });
+            
+            // 綁定服藥點顯示切換事件
+            document.getElementById('show-medication-bp').addEventListener('change', function() {
+                renderTrendCharts();
+            });
+            
+            document.getElementById('show-medication-bs').addEventListener('change', function() {
+                renderTrendCharts();
+            });
+        }
+        
+        // 更新趨勢頁面的所有內容
+        function updateTrendPage() {
+            updateTrendStats();
+            renderTrendCharts();
+            renderMedicationTimeline();
+            generateAIRecommendations();
+        }
+        
+        // 更新統計數據
+        function updateTrendStats() {
+            // 計算血壓平均值
+            const recentBp = getRecentRecords(bpRecords, currentPeriod);
+            if (recentBp.length > 0) {
+                const avgSystolic = recentBp.reduce((sum, record) => sum + record.systolic, 0) / recentBp.length;
+                const avgDiastolic = recentBp.reduce((sum, record) => sum + record.diastolic, 0) / recentBp.length;
+                
+                document.getElementById('avg-systolic').textContent = Math.round(avgSystolic) + ' mmHg';
+                document.getElementById('avg-diastolic').textContent = Math.round(avgDiastolic) + ' mmHg';
+                
+                // 計算趨勢
+                const olderBp = getRecentRecords(bpRecords, currentPeriod * 2).slice(0, recentBp.length);
+                if (olderBp.length === recentBp.length) {
+                    const oldAvgSystolic = olderBp.reduce((sum, record) => sum + record.systolic, 0) / olderBp.length;
+                    const oldAvgDiastolic = olderBp.reduce((sum, record) => sum + record.diastolic, 0) / olderBp.length;
+                    
+                    updateTrendIndicator('systolic-trend', avgSystolic, oldAvgSystolic);
+                    updateTrendIndicator('diastolic-trend', avgDiastolic, oldAvgDiastolic);
+                }
+            }
+            
+            // 計算血糖平均值（僅空腹）
+            const recentBs = getRecentRecords(bsRecords, currentPeriod).filter(r => r.timing === 'fasting');
+            if (recentBs.length > 0) {
+                const avgBs = recentBs.reduce((sum, record) => sum + record.value, 0) / recentBs.length;
+                document.getElementById('avg-fasting-bs').textContent = Math.round(avgBs) + ' mg/dL';
+                
+                // 計算趨勢
+                const olderBs = getRecentRecords(bsRecords, currentPeriod * 2)
+                    .filter(r => r.timing === 'fasting')
+                    .slice(0, recentBs.length);
+                    
+                if (olderBs.length === recentBs.length) {
+                    const oldAvgBs = olderBs.reduce((sum, record) => sum + record.value, 0) / olderBs.length;
+                    updateTrendIndicator('bs-trend', avgBs, oldAvgBs);
+                }
+            }
+            
+            // 計算服藥遵從度
+            if (typeof medRecords !== 'undefined' && medRecords.length > 0) {
+                const recentMeds = getRecentRecords(medRecords, currentPeriod);
+                const expectedMeds = currentPeriod; // 簡化計算
+                const adherence = recentMeds.length / expectedMeds * 100;
+                document.getElementById('med-adherence').textContent = Math.min(100, Math.round(adherence)) + '%';
+                
+                // 計算趨勢
+                const olderMeds = getRecentRecords(medRecords, currentPeriod * 2).slice(0, recentMeds.length);
+                if (olderMeds.length > 0) {
+                    const oldAdherence = olderMeds.length / expectedMeds * 100;
+                    updateTrendIndicator('adherence-trend', adherence, oldAdherence);
+                }
+            }
+        }
+        
+        // 更新趨勢指示器
+        function updateTrendIndicator(elementId, current, previous) {
+            const element = document.getElementById(elementId);
+            const diff = current - previous;
+            
+            if (Math.abs(diff) < 0.5) {
+                element.className = 'trend-indicator trend-stable';
+                element.innerHTML = '<i class="fas fa-minus me-1"></i>保持穩定';
+            } else if (diff > 0) {
+                element.className = 'trend-indicator trend-up';
+                element.innerHTML = `<i class="fas fa-arrow-up me-1"></i>較前期上升`;
+            } else {
+                element.className = 'trend-indicator trend-down';
+                element.innerHTML = `<i class="fas fa-arrow-down me-1"></i>較前期下降`;
+            }
+        }
+        
+        // 獲取最近N天的記錄
+        function getRecentRecords(records, days) {
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - days);
+            
+            return records
+                .filter(record => new Date(record.date) >= cutoffDate)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
+        
+        // 渲染趨勢圖表
+        function renderTrendCharts() {
+            renderBpTrendChart();
+            renderBsTrendChart();
+        }
+        
+        // 渲染血壓趨勢圖
+        function renderBpTrendChart() {
+            const ctx = document.getElementById('bp-trend-chart');
+            if (!ctx) return;
+            
+            if (trendChartBp) {
+                trendChartBp.destroy();
+            }
+            
+            const recentBp = getRecentRecords(bpRecords, currentPeriod);
+            const showMeds = document.getElementById('show-medication-bp').checked;
+            
+            const labels = recentBp.map(r => formatDateTime(r.date).split(' ')[0]);
+            const systolicData = recentBp.map(r => r.systolic);
+            const diastolicData = recentBp.map(r => r.diastolic);
+            
+            // 準備藥物點數據
+            let medicationPoints = [];
+            if (showMeds && typeof medRecords !== 'undefined') {
+                const recentMeds = getRecentRecords(medRecords, currentPeriod);
+                medicationPoints = recentMeds.map(med => {
+                    const bpIndex = recentBp.findIndex(bp => 
+                        Math.abs(new Date(bp.date) - new Date(med.date)) < 3600000 // 1小時內
+                    );
+                    return {
+                        x: bpIndex >= 0 ? bpIndex : recentBp.length - 1,
+                        y: bpIndex >= 0 ? recentBp[bpIndex].systolic : 
+                           systolicData.length > 0 ? Math.max(...systolicData) : 140
+                    };
+                });
+            }
+            
+            trendChartBp = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '收縮壓',
+                            data: systolicData,
+                            borderColor: '#dc3545',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: '舒張壓',
+                            data: diastolicData,
+                            borderColor: '#0d6efd',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        ...(showMeds ? [{
+                            label: '服藥時間',
+                            data: medicationPoints,
+                            type: 'scatter',
+                            backgroundColor: '#198754',
+                            pointRadius: 8,
+                            pointHoverRadius: 10
+                        }] : [])
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: '血壓 (mmHg)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 渲染血糖趨勢圖
+        function renderBsTrendChart() {
+            const ctx = document.getElementById('bs-trend-chart');
+            if (!ctx) return;
+            
+            if (trendChartBs) {
+                trendChartBs.destroy();
+            }
+            
+            const recentBs = getRecentRecords(bsRecords, currentPeriod);
+            const showMeds = document.getElementById('show-medication-bs').checked;
+            
+            const labels = recentBs.map(r => formatDateTime(r.date).split(' ')[0]);
+            const bsData = recentBs.map(r => r.value);
+            
+            // 準備藥物點數據
+            let medicationPoints = [];
+            if (showMeds && typeof medRecords !== 'undefined') {
+                const recentMeds = getRecentRecords(medRecords, currentPeriod);
+                medicationPoints = recentMeds.map(med => {
+                    const bsIndex = recentBs.findIndex(bs => 
+                        Math.abs(new Date(bs.date) - new Date(med.date)) < 3600000 // 1小時內
+                    );
+                    return {
+                        x: bsIndex >= 0 ? bsIndex : recentBs.length - 1,
+                        y: bsIndex >= 0 ? recentBs[bsIndex].value : 
+                           bsData.length > 0 ? Math.max(...bsData) : 180
+                    };
+                });
+            }
+            
+            trendChartBs = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '血糖值',
+                            data: bsData,
+                            borderColor: '#fd7e14',
+                            backgroundColor: 'rgba(253, 126, 20, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        ...(showMeds ? [{
+                            label: '服藥時間',
+                            data: medicationPoints,
+                            type: 'scatter',
+                            backgroundColor: '#198754',
+                            pointRadius: 8,
+                            pointHoverRadius: 10
+                        }] : [])
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: '血糖 (mg/dL)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 渲染藥物時間軸
+        function renderMedicationTimeline() {
+            const timeline = document.getElementById('medication-timeline');
+            if (!timeline) return;
+            
+            // 合併所有記錄並按時間排序
+            const allRecords = [
+                ...bpRecords.map(r => ({...r, type: 'bp', displayText: `血壓: ${r.systolic}/${r.diastolic} mmHg`})),
+                ...bsRecords.map(r => ({...r, type: 'bs', displayText: `血糖: ${r.value} mg/dL (${getMeasurementTimeText(r.timing)})`})),
+                ...(typeof medRecords !== 'undefined' ? 
+                    medRecords.map(r => ({...r, type: 'med', displayText: `服藥: ${r.name}`})) : [])
+            ].sort((a, b) => new Date(b.date) - new Date(a.date)) // 按時間倒序
+             .slice(0, 10); // 只顯示最近10條
+            
+            if (allRecords.length === 0) {
+                timeline.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                        <p>暫無時間軸數據</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            timeline.innerHTML = allRecords.map(record => `
+                <div class="timeline-item">
+                    <div class="timeline-dot ${record.type}-dot"></div>
+                    <div class="flex-grow-1">
+                        <strong>${record.displayText}</strong>
+                    </div>
+                    <small class="text-muted">${formatDateTime(record.date)}</small>
+                </div>
+            `).join('');
+        }
+        
+        // 生成AI建議
+        function generateAIRecommendations() {
+            const container = document.getElementById('ai-recommendations');
+            if (!container) return;
+            
+            const recommendations = [];
+            
+            // 血壓分析
+            const recentBp = getRecentRecords(bpRecords, 7);
+            if (recentBp.length > 0) {
+                const avgSystolic = recentBp.reduce((sum, r) => sum + r.systolic, 0) / recentBp.length;
+                const avgDiastolic = recentBp.reduce((sum, r) => sum + r.diastolic, 0) / recentBp.length;
+                
+                if (avgSystolic >= 140 || avgDiastolic >= 90) {
+                    recommendations.push({
+                        type: 'danger',
+                        title: '血壓控制需要關注',
+                        message: '近期血壓偏高，建議諮詢醫生調整用藥方案。'
+                    });
+                } else if (avgSystolic >= 130 || avgDiastolic >= 85) {
+                    recommendations.push({
+                        type: 'warning',
+                        title: '血壓臨界偏高',
+                        message: '注意飲食控制和規律運動，監測血壓變化。'
+                    });
+                } else {
+                    recommendations.push({
+                        type: 'success',
+                        title: '血壓控制良好',
+                        message: '繼續保持當前的健康管理習慣。'
+                    });
+                }
+            }
+            
+            // 血糖分析
+            const recentBs = getRecentRecords(bsRecords, 7).filter(r => r.timing === 'fasting');
+            if (recentBs.length > 0) {
+                const avgBs = recentBs.reduce((sum, r) => sum + r.value, 0) / recentBs.length;
+                
+                if (avgBs >= 126) {
+                    recommendations.push({
+                        type: 'danger',
+                        title: '空腹血糖偏高',
+                        message: '建議就醫調整用藥，注意碳水化合物攝取。'
+                    });
+                } else if (avgBs >= 100) {
+                    recommendations.push({
+                        type: 'warning',
+                        title: '空腹血糖臨界值',
+                        message: '注意飲食控制，定期監測血糖變化。'
+                    });
+                } else {
+                    recommendations.push({
+                        type: 'success',
+                        title: '血糖控制穩定',
+                        message: '空腹血糖值在理想範圍內。'
+                    });
+                }
+            }
+            
+            // 服藥遵從度分析
+            if (typeof medRecords !== 'undefined' && medRecords.length > 0) {
+                const recentMeds = getRecentRecords(medRecords, 7);
+                const adherence = recentMeds.length / 7 * 100; // 簡化計算
+                
+                if (adherence < 80) {
+                    recommendations.push({
+                        type: 'warning',
+                        title: '服藥遵從度待改善',
+                        message: '請按時服藥，設定提醒以確保治療效果。'
+                    });
+                } else {
+                    recommendations.push({
+                        type: 'success',
+                        title: '服藥遵從度良好',
+                        message: '繼續保持規律服藥的習慣。'
+                    });
+                }
+            }
+            
+            if (recommendations.length === 0) {
+                container.innerHTML = `
+                    <div class="ai-recommendation ai-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>數據不足</h6>
+                        <p class="mb-0">請添加更多健康記錄以獲得個性化建議。</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = recommendations.map(rec => `
+                <div class="ai-recommendation ai-${rec.type}">
+                    <h6><i class="${getRecommendationIcon(rec.type)} me-2"></i>${rec.title}</h6>
+                    <p class="mb-0">${rec.message}</p>
+                </div>
+            `).join('');
+        }
+        
+        // 獲取建議圖標
+        function getRecommendationIcon(type) {
+            switch (type) {
+                case 'danger': return 'fas fa-exclamation-triangle';
+                case 'warning': return 'fas fa-exclamation-circle';
+                case 'success': return 'fas fa-check-circle';
+                default: return 'fas fa-info-circle';
+            }
+        }
+        
+        // 當切換到趨勢頁面時初始化
+        document.getElementById('trend-tab').addEventListener('shown.bs.tab', function() {
+            setTimeout(initTrendPage, 100);
+        });
+        
+        // 如果當前就是趨勢頁面，直接初始化
+        if (document.getElementById('trend-tab').classList.contains('active')) {
+            setTimeout(initTrendPage, 500);
+        }
+    </script>
 </body>
 </html>
