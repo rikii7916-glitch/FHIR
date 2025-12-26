@@ -979,8 +979,18 @@ function initSync(onConnectCallback) {
 
     // 3. 建立連線 Client
     const clientId = "patient_" + Math.random().toString(16).substr(2, 8);
-    mqttClient = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, clientId);
+    mqttClient = new Paho.MQTT.Client("broker.emqx.io", Number(8084), "clientId_" + Math.random());
+    
+    const connectOptions = {
+    useSSL: true, // 必須開啟此項
+    onSuccess: onConnect,
+    onFailure: onFailure,
+    // 如果是 emqx 或其他雲端，可能還需要設置正確的超時
+    timeout: 3,
+    keepAliveInterval: 60
+    };
 
+client.connect(connectOptions);
     // 斷線處理
     mqttClient.onConnectionLost = (responseObject) => {
         console.warn("MQTT 斷線: " + responseObject.errorMessage);
