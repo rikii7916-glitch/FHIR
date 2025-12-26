@@ -1094,34 +1094,17 @@ showFHIRModal = function(bundle, title, type) {
     document.getElementById('fhir-modal-title').textContent = title;
     const qrContainer = document.getElementById('qrcode');
     qrContainer.innerHTML = ''; 
+    // --- 核心修正：強制導向至 GitHub Pages 的 doctor_view.html ---
     
-    // UI 顯示處理
-    const fullJson = JSON.stringify(bundle, null, 2);
-    document.getElementById('fhir-content-display').textContent = fullJson;
-    document.getElementById('text-report-display').innerHTML = fhirToText(bundle, type);
+    // 定義 GitHub 上的基礎路徑
+    const githubBase = "https://rikii7916-glitch.github.io/FHIR/doctor_view.html";
+    
+    // 組合最終網址，加上 topic 參數
+    const syncUrl = `${githubBase}?topic=${syncTopicId}`;
+    
+    console.log("生成的 QR Code 網址:", syncUrl);
 
-    // --- 修正網址邏輯：防止出現 127.0.0.1 ---
-    let syncUrl = "";
-    const GITHUB_USERNAME = "rikii7916-glitch"; // ⬅️ 請修改這裡
-    const REPO_NAME = "FHIR";      // ⬅️ 請修改這裡
-    const githubBase = `https://${GITHUB_USERNAME}.github.io/${REPO_NAME}/doctor_view.html`;
-
-    if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
-        // 如果在本地開發，QR Code 強制指向 GitHub 線上版本，手機才掃得到
-        syncUrl = `${githubBase}?topic=${syncTopicId}`;
-    } else {
-        // 如果已經在 GitHub 上，則動態抓取當前路徑
-        let currentUrl = window.location.href.split('?')[0];
-        let doctorUrl = currentUrl.replace("index.html", "doctor_view.html");
-        if (!doctorUrl.endsWith("doctor_view.html")) {
-            doctorUrl = doctorUrl.endsWith("/") ? doctorUrl + "doctor_view.html" : doctorUrl + "/doctor_view.html";
-        }
-        syncUrl = `${doctorUrl}?topic=${syncTopicId}`;
-    }
-    // ---------------------------------------
-
-    console.log("手機掃描網址:", syncUrl);
-
+    // 生成 QR Code
     new QRCode(qrContainer, {
         text: syncUrl,
         width: 200,
