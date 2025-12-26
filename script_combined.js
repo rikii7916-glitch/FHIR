@@ -526,27 +526,27 @@ function showFHIRModal(bundle, title, type) {
     // 觸發按鈕重置
     textBtn.click();
 
-    // QR Code 生成 (精簡版)
-    setTimeout(() => {
-        try {
-            let miniBundle = JSON.parse(fullJson);
-            // 只保留最新的3筆 observation 防止 QR code 過大
-            const obsIndices = miniBundle.entry.map((e, i) => e.resource.resourceType === 'Observation' ? i : -1).filter(i => i !== -1);
-            if (obsIndices.length > 3) {
-                miniBundle.entry.splice(1, obsIndices.length - 3);
-                miniBundle.entry.find(e => e.resource.resourceType === 'DiagnosticReport').resource.conclusion += " (QR Code 僅含部分數據)";
-            }
-            new QRCode(qrContainer, {
-                text: btoa(unescape(encodeURIComponent(JSON.stringify(miniBundle)))),
-                width: 180, height: 180, correctLevel: QRCode.CorrectLevel.L
-            });
-        } catch (e) {
-            qrContainer.innerText = "數據過大，無法生成 QR Code";
-        }
-    }, 100);
+//     // QR Code 生成 (精簡版)
+//     setTimeout(() => {
+//         try {
+//             let miniBundle = JSON.parse(fullJson);
+//             // 只保留最新的3筆 observation 防止 QR code 過大
+//             const obsIndices = miniBundle.entry.map((e, i) => e.resource.resourceType === 'Observation' ? i : -1).filter(i => i !== -1);
+//             if (obsIndices.length > 3) {
+//                 miniBundle.entry.splice(1, obsIndices.length - 3);
+//                 miniBundle.entry.find(e => e.resource.resourceType === 'DiagnosticReport').resource.conclusion += " (QR Code 僅含部分數據)";
+//             }
+//             new QRCode(qrContainer, {
+//                 text: btoa(unescape(encodeURIComponent(JSON.stringify(miniBundle)))),
+//                 width: 180, height: 180, correctLevel: QRCode.CorrectLevel.L
+//             });
+//         } catch (e) {
+//             qrContainer.innerText = "數據過大，無法生成 QR Code";
+//         }
+//     }, 100);
 
-    modal.show();
-}
+//     modal.show();
+ }
 
 function copyFhirContent(elementId) {
     const el = document.getElementById(elementId);
@@ -955,55 +955,137 @@ window.deleteMedRecord = deleteMedRecord;
 // 其它 HTML 直接呼叫的函數也需確保全域可見
 
 // ==========================================
-// 12. MQTT 即時同步功能 (GitHub Pages HTTPS 修正版)
+// 12. MQTT 即時同步功能 (修正版 - 強制推送)
 // ==========================================
 let mqttClient = null;
 let syncTopicId = localStorage.getItem('cig_sync_topic') || null;
-
-// --- 關鍵修正：針對 GitHub Pages 的 HTTPS 必須使用 WSS 協議 ---
+// 使用 HiveMQ 的 WebSocket 端口 (確保防火牆未擋)
 const MQTT_BROKER = "broker.hivemq.com";
-const MQTT_PORT = 8884; // HiveMQ 的 WSS 端口是 8884 (8000 是不安全的 WS)
+const MQTT_PORT = 8000;
 let isMqttConnected = false;
 
 function initSync(onConnectCallback) {
+    // 1. 確保有 Topic ID
     if (!syncTopicId) {
         syncTopicId = 'cig_user_' + Math.random().toString(36).substring(2, 10);
         localStorage.setItem('cig_sync_topic', syncTopicId);
     }
 
+    // 2. 如果已經連線，直接執行回呼
     if (mqttClient && isMqttConnected) {
         if (onConnectCallback) onConnectCallback();
         return;
     }
 
+    // 3. 建立連線 Client
     const clientId = "patient_" + Math.random().toString(16).substr(2, 8);
-    mqttClient = new Paho.MQTT.Client(MQTT_BROKER, Number(MQTT_PORT), clientId);
+    mqttClient = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, clientId);
 
+    // 斷線處理
     mqttClient.onConnectionLost = (responseObject) => {
         console.warn("MQTT 斷線: " + responseObject.errorMessage);
         isMqttConnected = false;
+        // 5秒後嘗試重連
         setTimeout(() => initSync(), 5000); 
     };
 
-    console.log("正在連接 MQTT Broker (WSS)...");
+    // 4. 開始連線
+    console.log("正在連接 MQTT Broker...");
     mqttClient.connect({
         onSuccess: () => {
             console.log("✅ MQTT 連線成功! Topic:", syncTopicId);
             isMqttConnected = true;
             if (onConnectCallback) onConnectCallback();
+            
+            // 連線後，自動發送一次最新狀態 (Retained)
+            // 這裡延遲 500ms 確保連線穩定
             setTimeout(pushDataToCloud, 500);
         },
         onFailure: (ctx) => {
-            console.error("❌ MQTT 連線失敗 (請檢查 8884 端口):", ctx.errorMessage);
+            console.error("❌ MQTT 連線失敗:", ctx.errorMessage);
             isMqttConnected = false;
         },
-        useSSL: true, // ★ 重要：在 GitHub Pages (HTTPS) 下必須設為 true
-        timeout: 3,
+        useSSL: false, // HiveMQ 公共測試區通常用 ws:// (非 SSL) 比較穩，若要在 HTTPS 網域跑需改 true
         keepAliveInterval: 30
     });
 }
 
-// --- 修正路徑處理：確保能正確找到 GitHub 上的 doctor_view.html ---
+// 推送數據的核心函式 (支援傳入特定 bundle，若無則自動生成)
+function pushDataToCloud(specificBundle = null) {
+    // 如果沒連線，先連線，連線成功後再回頭執行自己
+    if (!isMqttConnected) {
+        console.log("尚未連線，嘗試連線並重送...");
+        initSync(() => pushDataToCloud(specificBundle));
+        return;
+    }
+
+    let bundleToSend = specificBundle;
+
+    // 如果沒有指定 bundle，就自動抓取最新的數據生成一個
+    if (!bundleToSend) {
+        // 取最近 50 筆，避免封包過大
+        const recentRecords = [
+            ...bpRecords.map(r => ({...r, type: 'bp'})), 
+            ...bsRecords.map(r => ({...r, type: 'bs'}))
+        ].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 50);
+
+         const recentMeds = [...medRecords]
+            .sort((a,b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 10);
+
+        // 建構 Bundle
+        bundleToSend = {
+            resourceType: "Bundle",
+            id: crypto.randomUUID(),
+            meta: { lastUpdated: new Date().toISOString() },
+            type: "collection",
+            entry: [{ fullUrl: "urn:uuid:" + currentPatient.id, resource: currentPatient }]
+        };
+
+        // 加入 Observation
+        recentRecords.forEach(rec => {
+            const obs = rec.type === 'bp' 
+                ? createBpObservation(rec, "urn:uuid:" + currentPatient.id) 
+                : createBsObservation(rec, "urn:uuid:" + currentPatient.id);
+            bundleToSend.entry.push({ resource: obs });
+        });
+        
+        recentMeds.forEach(med => {
+            const medicationResource = createMedicationStatement(med, "urn:uuid:" + currentPatient.id);
+            bundleToSend.entry.push({ resource: medicationResource });
+        });
+
+        // 加入報告摘要
+        const report = {
+            resourceType: "DiagnosticReport",
+            status: "final",
+            conclusion: `即時同步數據 (共 ${recentRecords.length} 筆)`
+        };
+        bundleToSend.entry.push({ resource: report });
+    }
+
+    try {
+        const payload = JSON.stringify(bundleToSend);
+        const message = new Paho.MQTT.Message(payload);
+        message.destinationName = `cig_health_sync/${syncTopicId}`;
+        message.retained = true; // ★關鍵：設為 Retained，讓醫生一掃碼就能讀到最後一筆
+        mqttClient.send(message);
+        console.log("📤 數據已推送到雲端 (Retained)");
+    } catch (e) {
+        console.error("推送失敗:", e);
+    }
+}
+
+// 覆寫 saveRecords：當使用者在 UI 按保存時，順便推送
+const originalSaveRecords = saveRecords;
+saveRecords = function() {
+    originalSaveRecords(); 
+    // 這裡我們加個延遲，因為 UI 可能還在更新
+    setTimeout(() => pushDataToCloud(), 100);
+}
+
+// 覆寫 showFHIRModal：確保產生 QR Code 時，連結正確
+const originalShowFHIRModal = showFHIRModal;
 showFHIRModal = function(bundle, title, type) {
     if (!syncTopicId) initSync();
     pushDataToCloud(bundle);
@@ -1011,50 +1093,55 @@ showFHIRModal = function(bundle, title, type) {
     const modal = new bootstrap.Modal(document.getElementById('fhirModal'));
     document.getElementById('fhir-modal-title').textContent = title;
     const qrContainer = document.getElementById('qrcode');
-    qrContainer.innerHTML = '';
+    qrContainer.innerHTML = ''; 
     
-    document.getElementById('fhir-content-display').textContent = JSON.stringify(bundle, null, 2);
+    // UI 顯示處理
+    const fullJson = JSON.stringify(bundle, null, 2);
+    document.getElementById('fhir-content-display').textContent = fullJson;
     document.getElementById('text-report-display').innerHTML = fhirToText(bundle, type);
 
-    // ★ 路徑修正邏輯：
-    // GitHub 網址通常是 https://user.github.io/repo/index.html
-    let currentHref = window.location.href;
+    // --- 修正網址邏輯：防止出現 127.0.0.1 ---
     let syncUrl = "";
+    const GITHUB_USERNAME = "rikii7916-glitch"; // ⬅️ 請修改這裡
+    const REPO_NAME = "FHIR";      // ⬅️ 請修改這裡
+    const githubBase = `https://${GITHUB_USERNAME}.github.io/${REPO_NAME}/doctor_view.html`;
 
-    if (currentHref.includes('index.html')) {
-        syncUrl = currentHref.replace('index.html', 'doctor_view.html');
+    if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
+        // 如果在本地開發，QR Code 強制指向 GitHub 線上版本，手機才掃得到
+        syncUrl = `${githubBase}?topic=${syncTopicId}`;
     } else {
-        // 如果結尾沒有 index.html (例如 https://.../repo/)
-        // 確保結尾有斜線再加檔名
-        let baseUrl = currentHref.split('?')[0].split('#')[0];
-        syncUrl = baseUrl.endsWith('/') ? baseUrl + 'doctor_view.html' : baseUrl + '/../doctor_view.html';
+        // 如果已經在 GitHub 上，則動態抓取當前路徑
+        let currentUrl = window.location.href.split('?')[0];
+        let doctorUrl = currentUrl.replace("index.html", "doctor_view.html");
+        if (!doctorUrl.endsWith("doctor_view.html")) {
+            doctorUrl = doctorUrl.endsWith("/") ? doctorUrl + "doctor_view.html" : doctorUrl + "/doctor_view.html";
+        }
+        syncUrl = `${doctorUrl}?topic=${syncTopicId}`;
     }
-    
-    // 清除重複斜線並加上 Topic ID
-    syncUrl = new URL(syncUrl, window.location.href).href + `?topic=${syncTopicId}`;
-    
-    console.log("GitHub QR Code Link:", syncUrl);
+    // ---------------------------------------
+
+    console.log("手機掃描網址:", syncUrl);
 
     new QRCode(qrContainer, {
         text: syncUrl,
-        width: 180, height: 180, correctLevel: QRCode.CorrectLevel.L
+        width: 200,
+        height: 200,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
     });
 
-    // 提示文字
     const hint = document.createElement('div');
-    hint.className = 'mt-2';
+    hint.className = 'mt-3 text-center';
     hint.innerHTML = `
-        <p class="text-success fw-bold mb-1"><i class="fas fa-wifi me-1"></i>雲端同步頻道建立完成</p>
-        <small class="text-muted d-block mb-2">Topic ID: ${syncTopicId}</small>
-        <button class="btn btn-sm btn-outline-primary" onclick="pushDataToCloud()">
-            <i class="fas fa-sync me-1"></i>手動重推數據
-        </button>
+        <div class="small text-muted mb-2">請醫師掃描條碼 (已自動修正線上網址)</div>
+        <a href="${syncUrl}" target="_blank" class="btn btn-sm btn-outline-primary">預覽線上連結</a>
     `;
     qrContainer.appendChild(hint);
 
     modal.show();
     
-    // UI Tab 切換 (保持原樣)
+    // Tab 切換邏輯
     const textBtn = document.getElementById('text-format-btn');
     const fhirBtn = document.getElementById('fhir-format-btn');
     const textDiv = document.getElementById('text-report-display');
