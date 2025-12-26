@@ -957,158 +957,68 @@ window.deleteMedRecord = deleteMedRecord;
 // ==========================================
 // 12. MQTT 即時同步功能 (修正版 - 強制推送)
 // ==========================================
-let mqttClient = null;
-let syncTopicId = localStorage.getItem('cig_sync_topic') || null;
-// 使用 HiveMQ 的 WebSocket 端口 (確保防火牆未擋)
-const MQTT_BROKER = "broker.hivemq.com";
-const MQTT_PORT = 8000;
-let isMqttConnected = false;
+// --- 1. 初始化 MQTT 與 同步邏輯 ---
+let mqttClient;
+let syncTopicId = '';
 
-function initSync(onConnectCallback) {
-    // 1. 確保有 Topic ID
-    if (!syncTopicId) {
-        syncTopicId = 'cig_user_' + Math.random().toString(36).substring(2, 10);
-        localStorage.setItem('cig_sync_topic', syncTopicId);
-    }
+function initSync() {
+    if (syncTopicId) return;
+    syncTopicId = 'fhir_sync_' + Math.random().toString(36).substr(2, 9);
+    
+    // 修正：GitHub Pages (HTTPS) 必須使用 8884 埠號與 SSL
+    mqttClient = new Paho.MQTT.Client('broker.hivemq.com', 8884, 'client_' + Math.random().toString(36).substr(2, 9));
 
-    // 2. 如果已經連線，直接執行回呼
-    if (mqttClient && isMqttConnected) {
-        if (onConnectCallback) onConnectCallback();
-        return;
-    }
-
-    // 3. 建立連線 Client
-    const clientId = "patient_" + Math.random().toString(16).substr(2, 8);
-    mqttClient = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, clientId);
-
-    // 斷線處理
-    mqttClient.onConnectionLost = (responseObject) => {
-        console.warn("MQTT 斷線: " + responseObject.errorMessage);
-        isMqttConnected = false;
-        // 5秒後嘗試重連
-        setTimeout(() => initSync(), 5000); 
+    const connectOptions = {
+        useSSL: true, 
+        onSuccess: () => { console.log("MQTT 連線成功 (Secure)"); },
+        onFailure: (err) => { console.error("MQTT 連線失敗:", err.errorMessage); }
     };
-
-    // 4. 開始連線
-    console.log("正在連接 MQTT Broker...");
-    mqttClient.connect({
-        onSuccess: () => {
-            console.log("✅ MQTT 連線成功! Topic:", syncTopicId);
-            isMqttConnected = true;
-            if (onConnectCallback) onConnectCallback();
-            
-            // 連線後，自動發送一次最新狀態 (Retained)
-            // 這裡延遲 500ms 確保連線穩定
-            setTimeout(pushDataToCloud, 500);
-        },
-        onFailure: (ctx) => {
-            console.error("❌ MQTT 連線失敗:", ctx.errorMessage);
-            isMqttConnected = false;
-        },
-        useSSL: false, // HiveMQ 公共測試區通常用 ws:// (非 SSL) 比較穩，若要在 HTTPS 網域跑需改 true
-        keepAliveInterval: 30
-    });
+    mqttClient.connect(connectOptions);
 }
 
-// 推送數據的核心函式 (支援傳入特定 bundle，若無則自動生成)
-function pushDataToCloud(specificBundle = null) {
-    // 如果沒連線，先連線，連線成功後再回頭執行自己
-    if (!isMqttConnected) {
-        console.log("尚未連線，嘗試連線並重送...");
-        initSync(() => pushDataToCloud(specificBundle));
+function pushDataToCloud(bundle) {
+    if (!mqttClient || !mqttClient.isConnected()) {
+        initSync();
+        // 延遲發送確保連線已建立
+        setTimeout(() => pushDataToCloud(bundle), 1000);
         return;
     }
-
-    let bundleToSend = specificBundle;
-
-    // 如果沒有指定 bundle，就自動抓取最新的數據生成一個
-    if (!bundleToSend) {
-        // 取最近 50 筆，避免封包過大
-        const recentRecords = [
-            ...bpRecords.map(r => ({...r, type: 'bp'})), 
-            ...bsRecords.map(r => ({...r, type: 'bs'}))
-        ].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 50);
-
-         const recentMeds = [...medRecords]
-            .sort((a,b) => new Date(b.date) - new Date(a.date))
-            .slice(0, 10);
-
-        // 建構 Bundle
-        bundleToSend = {
-            resourceType: "Bundle",
-            id: crypto.randomUUID(),
-            meta: { lastUpdated: new Date().toISOString() },
-            type: "collection",
-            entry: [{ fullUrl: "urn:uuid:" + currentPatient.id, resource: currentPatient }]
-        };
-
-        // 加入 Observation
-        recentRecords.forEach(rec => {
-            const obs = rec.type === 'bp' 
-                ? createBpObservation(rec, "urn:uuid:" + currentPatient.id) 
-                : createBsObservation(rec, "urn:uuid:" + currentPatient.id);
-            bundleToSend.entry.push({ resource: obs });
-        });
-        
-        recentMeds.forEach(med => {
-            const medicationResource = createMedicationStatement(med, "urn:uuid:" + currentPatient.id);
-            bundleToSend.entry.push({ resource: medicationResource });
-        });
-
-        // 加入報告摘要
-        const report = {
-            resourceType: "DiagnosticReport",
-            status: "final",
-            conclusion: `即時同步數據 (共 ${recentRecords.length} 筆)`
-        };
-        bundleToSend.entry.push({ resource: report });
-    }
-
-    try {
-        const payload = JSON.stringify(bundleToSend);
-        const message = new Paho.MQTT.Message(payload);
-        message.destinationName = `cig_health_sync/${syncTopicId}`;
-        message.retained = true; // ★關鍵：設為 Retained，讓醫生一掃碼就能讀到最後一筆
-        mqttClient.send(message);
-        console.log("📤 數據已推送到雲端 (Retained)");
-    } catch (e) {
-        console.error("推送失敗:", e);
-    }
+    const message = new Paho.MQTT.Message(JSON.stringify(bundle));
+    message.destinationName = syncTopicId;
+    message.retained = true; // 重要：保留訊息讓醫師端一進去就看得到
+    mqttClient.send(message);
+    console.log("資料已推送到雲端 Topic:", syncTopicId);
 }
 
-// 覆寫 saveRecords：當使用者在 UI 按保存時，順便推送
-const originalSaveRecords = saveRecords;
-saveRecords = function() {
-    originalSaveRecords(); 
-    // 這裡我們加個延遲，因為 UI 可能還在更新
-    setTimeout(() => pushDataToCloud(), 100);
-}
-
-// 覆寫 showFHIRModal：確保產生 QR Code 時，連結正確
-const originalShowFHIRModal = showFHIRModal;
-showFHIRModal = function(bundle, title, type) {
+// --- 2. 核心 showFHIRModal 函式 (QR Code 生成) ---
+function showFHIRModal(bundle, title, type) {
+    // 確保同步機制啟動
     if (!syncTopicId) initSync();
     pushDataToCloud(bundle);
 
-    const modal = new bootstrap.Modal(document.getElementById('fhirModal'));
+    const modalElement = document.getElementById('fhirModal');
+    if (!modalElement) {
+        console.error("找不到 fhirModal 元素");
+        return;
+    }
+    const modal = new bootstrap.Modal(modalElement);
+    
     document.getElementById('fhir-modal-title').textContent = title;
     const qrContainer = document.getElementById('qrcode');
     qrContainer.innerHTML = ''; 
-    // --- 核心修正：強制導向至 GitHub Pages 的 doctor_view.html ---
-    
-    // 定義 GitHub 上的基礎路徑
-    const githubBase = "https://rikii7916-glitch.github.io/FHIR/doctor_view.html";
-    
-    // 組合最終網址，加上 topic 參數
-    const syncUrl = `${githubBase}?topic=${syncTopicId}`;
-    
-    console.log("生成的 QR Code 網址:", syncUrl);
 
+    // UI 顯示 JSON 與 文字報告
+    document.getElementById('fhir-content-display').textContent = JSON.stringify(bundle, null, 2);
+    document.getElementById('text-report-display').innerHTML = fhirToText(bundle, type);
+
+    // 強制設定為 GitHub Pages 的醫師端網址
+    const githubUrl = `https://rikii7916-glitch.github.io/FHIR/doctor_view.html?topic=${syncTopicId}`;
+    
     // 生成 QR Code
     new QRCode(qrContainer, {
-        text: syncUrl,
-        width: 200,
-        height: 200,
+        text: githubUrl,
+        width: 180,
+        height: 180,
         colorDark: "#000000",
         colorLight: "#ffffff",
         correctLevel: QRCode.CorrectLevel.H
