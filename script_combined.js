@@ -953,3 +953,206 @@ window.checkInteractions = checkInteractions;
 window.addMedicationRecord = addMedicationRecord;
 window.deleteMedRecord = deleteMedRecord;
 // 其它 HTML 直接呼叫的函數也需確保全域可見
+
+// ==========================================
+// 12. MQTT 即時同步功能 (修正版 - 強制推送)
+// ==========================================
+let mqttClient = null;
+let syncTopicId = localStorage.getItem('cig_sync_topic') || null;
+// 使用 HiveMQ 的 WebSocket 端口 (確保防火牆未擋)
+const MQTT_BROKER = "broker.hivemq.com";
+const MQTT_PORT = 8000;
+let isMqttConnected = false;
+
+function initSync(onConnectCallback) {
+    // 1. 確保有 Topic ID
+    if (!syncTopicId) {
+        syncTopicId = 'cig_user_' + Math.random().toString(36).substring(2, 10);
+        localStorage.setItem('cig_sync_topic', syncTopicId);
+    }
+
+    // 2. 如果已經連線，直接執行回呼
+    if (mqttClient && isMqttConnected) {
+        if (onConnectCallback) onConnectCallback();
+        return;
+    }
+
+    // 3. 建立連線 Client
+    const clientId = "patient_" + Math.random().toString(16).substr(2, 8);
+    mqttClient = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, clientId);
+
+    // 斷線處理
+    mqttClient.onConnectionLost = (responseObject) => {
+        console.warn("MQTT 斷線: " + responseObject.errorMessage);
+        isMqttConnected = false;
+        // 5秒後嘗試重連
+        setTimeout(() => initSync(), 5000); 
+    };
+
+    // 4. 開始連線
+    console.log("正在連接 MQTT Broker...");
+    mqttClient.connect({
+        onSuccess: () => {
+            console.log("✅ MQTT 連線成功! Topic:", syncTopicId);
+            isMqttConnected = true;
+            if (onConnectCallback) onConnectCallback();
+            
+            // 連線後，自動發送一次最新狀態 (Retained)
+            // 這裡延遲 500ms 確保連線穩定
+            setTimeout(pushDataToCloud, 500);
+        },
+        onFailure: (ctx) => {
+            console.error("❌ MQTT 連線失敗:", ctx.errorMessage);
+            isMqttConnected = false;
+        },
+        useSSL: false, // HiveMQ 公共測試區通常用 ws:// (非 SSL) 比較穩，若要在 HTTPS 網域跑需改 true
+        keepAliveInterval: 30
+    });
+}
+
+// 推送數據的核心函式 (支援傳入特定 bundle，若無則自動生成)
+function pushDataToCloud(specificBundle = null) {
+    // 如果沒連線，先連線，連線成功後再回頭執行自己
+    if (!isMqttConnected) {
+        console.log("尚未連線，嘗試連線並重送...");
+        initSync(() => pushDataToCloud(specificBundle));
+        return;
+    }
+
+    let bundleToSend = specificBundle;
+
+    // 如果沒有指定 bundle，就自動抓取最新的數據生成一個
+    if (!bundleToSend) {
+        // 取最近 50 筆，避免封包過大
+        const recentRecords = [
+            ...bpRecords.map(r => ({...r, type: 'bp'})), 
+            ...bsRecords.map(r => ({...r, type: 'bs'}))
+        ].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 50);
+
+        // 建構 Bundle
+        bundleToSend = {
+            resourceType: "Bundle",
+            id: crypto.randomUUID(),
+            meta: { lastUpdated: new Date().toISOString() },
+            type: "collection",
+            entry: [{ fullUrl: "urn:uuid:" + currentPatient.id, resource: currentPatient }]
+        };
+
+        // 加入 Observation
+        recentRecords.forEach(rec => {
+            const obs = rec.type === 'bp' 
+                ? createBpObservation(rec, "urn:uuid:" + currentPatient.id) 
+                : createBsObservation(rec, "urn:uuid:" + currentPatient.id);
+            bundleToSend.entry.push({ resource: obs });
+        });
+        
+        // 加入報告摘要
+        const report = {
+            resourceType: "DiagnosticReport",
+            status: "final",
+            conclusion: `即時同步數據 (共 ${recentRecords.length} 筆)`
+        };
+        bundleToSend.entry.push({ resource: report });
+    }
+
+    try {
+        const payload = JSON.stringify(bundleToSend);
+        const message = new Paho.MQTT.Message(payload);
+        message.destinationName = `cig_health_sync/${syncTopicId}`;
+        message.retained = true; // ★關鍵：設為 Retained，讓醫生一掃碼就能讀到最後一筆
+        mqttClient.send(message);
+        console.log("📤 數據已推送到雲端 (Retained)");
+    } catch (e) {
+        console.error("推送失敗:", e);
+    }
+}
+
+// 覆寫 saveRecords：當使用者在 UI 按保存時，順便推送
+const originalSaveRecords = saveRecords;
+saveRecords = function() {
+    originalSaveRecords(); 
+    // 這裡我們加個延遲，因為 UI 可能還在更新
+    setTimeout(() => pushDataToCloud(), 100);
+}
+
+// 覆寫 showFHIRModal：確保產生 QR Code 時，數據已經在雲端了
+const originalShowFHIRModal = showFHIRModal;
+showFHIRModal = function(bundle, title, type) {
+    // 1. 確保有 Topic ID
+    if (!syncTopicId) initSync();
+
+    // 2. 先強制推送這份報告到雲端！(這是修復 "No Info" 的關鍵)
+    pushDataToCloud(bundle);
+
+    const modal = new bootstrap.Modal(document.getElementById('fhirModal'));
+    document.getElementById('fhir-modal-title').textContent = title;
+    const qrContainer = document.getElementById('qrcode');
+    qrContainer.innerHTML = '';
+    
+    // 3. 顯示 JSON 文字 (UI)
+    const fullJson = JSON.stringify(bundle, null, 2);
+    document.getElementById('fhir-content-display').textContent = fullJson;
+    document.getElementById('text-report-display').innerHTML = fhirToText(bundle, type);
+
+    // 4. 生成 QR Code (只包含連結)
+    // 取得當前網址路徑，並切換到 doctor_view.html
+    // 例如: file:///C:/.../index.html -> file:///C:/.../doctor_view.html
+    let path = window.location.pathname;
+    // 處理路徑字串替換
+    if (path.indexOf('index.html') !== -1) {
+        path = path.replace('index.html', 'doctor_view.html');
+    } else if (path.endsWith('/')) {
+        path = path + 'doctor_view.html'; // 如果網址是資料夾結尾
+    } else {
+        // 簡單替換最後一個段落
+        path = path.substring(0, path.lastIndexOf('/')) + '/doctor_view.html';
+    }
+
+    const host = window.location.origin; // e.g., http://localhost:5500 or file://
+    
+    // 組合完整連結
+    // 注意：如果是 file:// 開頭，origin 可能是 null 或空，這裡做個防呆
+    const prefix = (host === 'null' || host === 'file://') ? 'file://' : host;
+    // 如果是本地檔案開啟，QR Code 的連結必須是絕對路徑，但手機可能掃不到電腦的檔案路徑
+    // **重要提示**：此功能建議在 Web Server (如 Live Server) 環境下測試，或將檔案上傳到 GitHub Pages
+    
+    const syncUrl = `${prefix}${path}?topic=${syncTopicId}`;
+    
+    console.log("QR Code Link:", syncUrl);
+
+    new QRCode(qrContainer, {
+        text: syncUrl,
+        width: 180, height: 180, correctLevel: QRCode.CorrectLevel.L
+    });
+
+    // 提示文字
+    const hint = document.createElement('div');
+    hint.className = 'mt-2';
+    hint.innerHTML = `
+        <p class="text-success fw-bold mb-1"><i class="fas fa-wifi me-1"></i>雲端同步頻道建立完成</p>
+        <small class="text-muted d-block mb-2">Topic ID: ${syncTopicId}</small>
+        <button class="btn btn-sm btn-outline-primary" onclick="pushDataToCloud()">
+            <i class="fas fa-sync me-1"></i>手動重推數據
+        </button>
+    `;
+    qrContainer.appendChild(hint);
+
+    modal.show();
+    
+    // UI Tab 切換 (保持原樣)
+    const textBtn = document.getElementById('text-format-btn');
+    const fhirBtn = document.getElementById('fhir-format-btn');
+    const textDiv = document.getElementById('text-report-display');
+    const fhirDiv = document.getElementById('fhir-content-display');
+    
+    textBtn.onclick = () => { textDiv.classList.remove('d-none'); fhirDiv.classList.add('d-none'); };
+    fhirBtn.onclick = () => { textDiv.classList.add('d-none'); fhirDiv.classList.remove('d-none'); };
+}
+
+// 初始化
+const originalInit = init;
+init = function() {
+    originalInit();
+    // 啟動時就連線，隨時準備
+    initSync(); 
+}
